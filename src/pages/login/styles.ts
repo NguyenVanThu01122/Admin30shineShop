@@ -366,7 +366,7 @@ export const ItemForm = styled(Form)`
       font-style: italic;
     }
   }
-  .submit-button {
+  .submit {
     margin-top: 30px;
     width: 100%;
     height: 45px;
@@ -375,19 +375,21 @@ export const ItemForm = styled(Form)`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: orangered;
+    /* color: white; */
     font-size: 20px;
     font-weight: bold;
     box-shadow: 0px 0px 15px 8px pink;
-    /* background: linear-gradient(
+    background: linear-gradient(
       217deg,
       rgb(226, 80, 229) 0%,
       rgb(75, 80, 230) 100%
-    ); */
+    );
+    transition: transform 0.5s ease; 
     &:hover {
-      border: none;
-      color: red !important;
-      box-shadow: 0px 0px 15px 8px orangered;
-    }
+        transform: scale(1.1);
+        background-color: #03e9f4;
+        box-shadow: 0 0 5px #03e9f4, 0 0 25px #03e9f4, 0 0 50px #03e9f4, 0 0 200px #03e9f4;
+        -webkit-box-reflect: below 1px linear-gradient(transparent, #0005); // tạo độ dài phản chiếu của ptu
+      }
   }
 `;

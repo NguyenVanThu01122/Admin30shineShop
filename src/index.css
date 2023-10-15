@@ -3,6 +3,8 @@
 * {
   font-family: "Be Vietnam Pro";
   box-sizing: border-box;
+  padding: 0px;
+  margin: 0px;
 }
 .custom-email{
   border: 1px solid violet;

@@ -99,7 +99,7 @@ function Login() {
                   placeholder="Vui lòng nhập mật khẩu !"
                 />
               </Form.Item>
-              <div className="submit-button" onClick={handleSubmit}>
+              <div className="submit" onClick={handleSubmit}>
                 ĐĂNG NHẬP
               </div>
             </ItemForm>

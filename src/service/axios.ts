@@ -1,9 +1,9 @@
-import axios from 'axios'
+import axios from "axios";
 
 const privateAxios = axios.create({
-  baseURL: 'http://localhost:3030', // cổng 3030 là cổng chạy local của backend
-  timeout: 4000
-})
+  baseURL: process.env.REACT_APP_BASE_URL,
+  timeout: 4000,
+});
 
 // // Buoc 1: Duoc chay truoc khi gui api len backend
 // privateAxios.interceptors.request.use(
@@ -57,8 +57,8 @@ const privateAxios = axios.create({
 //         })
 //     }
 
-//     Promise.reject(error)
+//     return Promise.reject(error)
 //   }
 // )
 
-export { privateAxios }
+export { privateAxios };
