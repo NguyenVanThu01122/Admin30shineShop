@@ -1,12 +1,17 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Form, Input, Pagination, Select, message } from "antd";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useCallback, useContext, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { AppContext } from "../../context";
 import iconDelete from "../../images/icon-delete.svg";
 import iconEdit from "../../images/icon-edit.svg";
-import { savelistUsers } from "../../redux/actions/productManagenment";
-import { privateAxios } from "../../service/axios";
+import {
+  addUser,
+  deleteUser,
+  getListUser,
+  updateUser,
+} from "../../service/user";
 import {
   ItemModalForm,
   ItemModaleDelete,
@@ -41,95 +46,172 @@ function UserManagement() {
   const [userId, setUserId] = useState("");
   const [editUser, setEditUser] = useState<any>(null);
   const [form] = Form.useForm();
-  const dispatch = useDispatch();
-  const users = useSelector((state: any) => state?.app?.listUsers); // lấy dữ liệu user trên store
+
+  const queryClient = useQueryClient();
+  const appContext = useContext(AppContext); // dùng useContext để truy cập vào context
 
   // xử lý các title của table
-  const columns = [
-    {
-      title: "STT",
-      dataIndex: "stt",
-      key: "stt",
-      width: 80,
-      render: (_: any, record: any, index: number) => {
-        return (page - 1) * limit + 1 + index;
+  const columns = useMemo(() => {
+    return [
+      {
+        title: "STT",
+        dataIndex: "stt",
+        key: "stt",
+        width: 80,
+        render: (_: any, record: any, index: number) => {
+          return (page - 1) * limit + 1 + index;
+        },
       },
-    },
-    {
-      title: "Tên khách hàng",
-      dataIndex: "name",
-      key: "name",
-      render: (value: string) => {
-        return <div className="name-user">{value}</div>;
+      {
+        title: "Tên khách hàng",
+        dataIndex: "name",
+        key: "name",
+        render: (value: string) => {
+          return <div className="name-user">{value}</div>;
+        },
       },
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      render: (value: string) => {
-        return <div className="email-user">{value}</div>;
+      {
+        title: "Email",
+        dataIndex: "email",
+        key: "email",
+        render: (value: string) => {
+          return <div className="email-user">{value}</div>;
+        },
       },
-    },
-    {
-      title: "Số điện thoại",
-      dataIndex: "telephone",
-      key: "telephone",
-    },
-    {
-      title: "Ngày sinh",
-      dataIndex: "date",
-      key: "date",
-      render: (value: string) => {
-        const date = new Date(value); // chuyển đổi value thành đối tượng
-        const formatDate = date.toLocaleDateString("vi-VN"); // sử dụng method tolocaleDateString để chuyển đổi đối tượng date thành chuỗi ngày với định dạng ngày, tháng, năm theo tiêu chuẩn vn
-        return <div>{formatDate}</div>;
+      {
+        title: "Số điện thoại",
+        dataIndex: "telephone",
+        key: "telephone",
       },
-    },
-    {
-      title: "Giới tính",
-      dataIndex: "gender",
-      key: "gender",
-      render: (value: string) => {
-        return (
-          <div className="gender-user">
-            {value === "male" ? "Nam" : value === "female" ? "Nữ" : "Khác"}
-          </div>
-        );
+      {
+        title: "Ngày sinh",
+        dataIndex: "date",
+        key: "date",
+        render: (value: string) => {
+          const date = new Date(value); // chuyển đổi value thành đối tượng
+          const formatDate = date.toLocaleDateString("vi-VN"); // sử dụng method tolocaleDateString để chuyển đổi đối tượng date thành chuỗi ngày với định dạng ngày, tháng, năm theo tiêu chuẩn vn
+          return <div>{formatDate}</div>;
+        },
       },
-    },
-    {
-      title: "Tổng tiền mua",
-      dataIndex: "totalMoney",
-      key: "totalMoney",
-      render: (value: number) => {
-        return (
-          <div className={value > 0 ? "total-money" : ""}>{value} VND</div>
-        );
+      {
+        title: "Giới tính",
+        dataIndex: "gender",
+        key: "gender",
+        render: (value: string) => {
+          return (
+            <div className="gender-user">
+              {value === "male" ? "Nam" : value === "female" ? "Nữ" : "Khác"}
+            </div>
+          );
+        },
       },
-    },
-    {
-      title: "Hành động",
-      dataIndex: "action",
-      key: "action",
-      render: (_: any, record: any) => {
-        return (
-          <div className="group-icon">
-            <img
-              src={iconEdit}
-              alt=""
-              onClick={() => showModalEditClient(record)}
-            />
-            <img
-              src={iconDelete}
-              alt=""
-              onClick={() => showModalDeleteClient(record?.id)}
-            />
-          </div>
-        );
+      {
+        title: "Tổng tiền mua",
+        dataIndex: "totalMoney",
+        key: "totalMoney",
+        render: (value: number) => {
+          return (
+            <div className={value > 0 ? "total-money" : ""}>{value} VND</div>
+          );
+        },
       },
-    },
-  ];
+      {
+        title: "Hành động",
+        dataIndex: "action",
+        key: "action",
+        render: (_: any, record: any) => {
+          return (
+            <div className="group-icon">
+              <img
+                src={iconEdit}
+                alt=""
+                onClick={() => showModalEditClient(record)}
+              />
+              <img
+                src={iconDelete}
+                alt=""
+                onClick={() => showModalDeleteClient(record?.id)}
+              />
+            </div>
+          );
+        },
+      },
+    ];
+  }, [limit,page]);
+  
+  const { isLoading } = useQuery(
+    ["getListUser", limit, page, sort, keyword],
+    () =>
+      getListUser({
+        limit,
+        page,
+        sort,
+        keyword,
+      }),
+    {
+      onSuccess: (data: any) => {
+        appContext?.setSaveUser(data.data?.data); // lưu data vào context
+        setTotalUsers(data.data?.totalUsers); // lưu tổng số lượng users vào totalUsers
+      },
+      onError: (err: any) => {},
+    }
+  );
+
+  // xử lý thêm thông tin khách hàng
+  const mutationAddUser = useMutation(
+    "add-user",
+    (body: any) => addUser(body),
+    {
+      onSuccess: (data: any) => {
+        queryClient.refetchQueries(["getListUser"]); // gọi lại hàm getListUser
+        setPage(1);
+        form.resetFields();
+        message.success(data.data?.message);
+        setIsOpenModal(false);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý sửa thông tin khách hàng
+  const mutationEditUser = useMutation(
+    "edit-user",
+    (payload: any) => updateUser(payload.id, payload.body),
+    {
+      onSuccess: (data: any) => {
+        setEditUser(null);
+        handleCancelModal();
+        queryClient.refetchQueries(["getListUser"]);
+        message.success(data.data?.message);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý xóa thông tin khách hàng
+  const mutationDeleteUser = useMutation(
+    "delet-user",
+    (id: string) => deleteUser(id),
+    {
+      onSuccess: (data: any) => {
+        queryClient.refetchQueries(["getListUser"]);
+        setIsOpenModalDelete(false); // đóng modal
+        message.success(data.data?.message);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // hàm xóa thông tin khách hàng
+  const handleDeleteClient = useCallback(() => {
+    mutationDeleteUser.mutate(userId);
+  }, [userId]);
 
   // hàm handleFinish được gọi khi tất cả các requied trong rules được định nghĩa có giá trị, và nội dung trong hàm dc gọi theo điều kiện if else
   const handleFinish = (value: any) => {
@@ -140,19 +222,12 @@ function UserManagement() {
         telephone: value?.telephone,
         date: value?.date,
       };
-      privateAxios
-        .put(`/admin/user/${editUser?.id}`, bodyEditUser)
-        .then((res) => {
-          setEditUser(null);
-          handleCancelModal();
-          handleGetListUser();
-          message.success(res.data?.message);
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationEditUser.mutate({
+        id: editUser?.id,
+        body: bodyEditUser,
+      });
     } else {
-      const params = {
+      const addBody = {
         name: value?.name,
         password: value?.password,
         email: value?.email,
@@ -160,53 +235,37 @@ function UserManagement() {
         date: value?.date,
         telephone: value?.telephone,
       };
-      privateAxios
-        .post("/admin/user", params)
-        .then((res) => {
-          handleGetListUser();
-          setPage(1);
-          form.resetFields();
-          message.success(res.data?.message);
-          setIsOpenModal(false);
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationAddUser.mutate(addBody);
+
+      // privateAxios
+      //   .post("/admin/user", addBody)
+      //   .then((res) => {
+      //     queryClient.refetchQueries(["getListUser"]);
+      //     setPage(1);
+      //     form.resetFields();
+      //     message.success(res.data?.message);
+      //     setIsOpenModal(false);
+      //   })
+      //   .catch((error) => {
+      //     message.error(error.response?.data?.message);
+      //   });
     }
   };
 
-  // hàm lấy danh sách user
-  const handleGetListUser = () => {
-    const params = {
-      limit,
-      page,
-      sort,
-      keyword,
-    };
-    privateAxios
-      .get("/admin/user", {
-        params,
-      })
-      .then((res) => {
-        dispatch(savelistUsers(res.data?.data)); // dùng dispatch bắn action listUsers lên reducers
-        setTotalUsers(res.data?.totalUsers); // lưu tổng số lượng users vào totalUsers
-      })
-      .catch((error) => {});
-  };
   // hàm mở modal thêm thông tin khách hàng
-  const showModalAddClient = () => {
+  const showModalAddClient = useCallback(() => {
     setIsOpenModal(true);
     setEditUser(null);
-  };
+  }, []);
 
   // hàm hủy bỏ modal
-  const handleCancelModal = () => {
+  const handleCancelModal = useCallback(() => {
     setIsOpenModal(false);
     form.resetFields();
-  };
+  }, []);
 
   // hàm mở modal sửa thông tin khách hàng
-  const showModalEditClient = (record: any) => {
+  const showModalEditClient = useCallback((record: any) => {
     setIsOpenModal(true);
     setEditUser(record);
     form.setFieldsValue({
@@ -217,58 +276,35 @@ function UserManagement() {
       date: record?.date?.substring(0, 10),
       telephone: record?.telephone,
     });
-  };
+  }, []);
 
-  // hàm xóa thông tin khách hàng
-  const handleDeleteClient = () => {
-    privateAxios
-      .delete(`/admin/user/${userId}`)
-      .then((res) => {
-        handleGetListUser(); // gọi lại listUser cập nhật dữ liệu mới
-        setIsOpenModalDelete(false); // đóng modal
-        message.success(res.data?.message);
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
-  };
   // hàm mở modal xóa khách hàng
-  const showModalDeleteClient = (id: string) => {
+  const showModalDeleteClient = useCallback((id: string) => {
     setIsOpenModalDelete(true);
     setUserId(id); // lưu id vao trong userId
-  };
+  }, []);
+
   // hàm hủy modal xóa khách hàng
-  const handleCancelModalDelete = () => {
+  const handleCancelModalDelete = useCallback(() => {
     setIsOpenModalDelete(false);
-  };
+  }, []);
 
   // hàm gưi form lên server
-  const handleSubmitForm = () => {
+  const handleSubmitForm = useCallback(() => {
     form.submit();
-  };
+  }, []);
 
   // hàm lấy giá trị input, và lưu giá trị vào state keyword
-  const handleChangeKeyword = (e: any) => {
+  const handleChangeKeyword = useCallback((e: any) => {
     setKeyword(e.target.value);
     setPage(1); // set page 1 với mục đích hiển thị user tìm kiếm ở  page 1 (ví dụ: đang ở page 2 và limit la 10, khi tìm kiếm user ở page 2 thì user tìm kiếm chỉ có 1, và muốn hiển thị usưr tìm kiếm ở page 2, thì user tìm kiếm phải có số lượng vượt quá số lượng limit ở page 1 )
-  };
-  // hàm xử lý khi click vào page thì set lại giá trị của page vừa click vào state page
-  const handleChangePage = (page: number) => {
-    setPage(page);
-  };
-  // xử lý select sort
-  const handleChangeSelectSort = (value: number) => {
-    setSort(value);
-  };
+  }, []);
+
   // xử lý select limit
-  const handleSelectLimit = (value: number) => {
+  const handleSelectLimit = useCallback((value: number) => {
     setLimit(value);
     setPage(1); // set page về 1 để luôn luôn dc hiển thị user, và tránh tình trạng người dùng chọn limit quá tổng số lượng user và trả về k có user
-  };
-
-  useEffect(() => {
-    handleGetListUser();
-  }, [keyword, page, limit, sort]);
+  }, []);
 
   return (
     <WrapperInformation>
@@ -287,7 +323,7 @@ function UserManagement() {
               <Select
                 className="select"
                 size="large"
-                onChange={handleChangeSelectSort}
+                onChange={(value) => setSort(value)}
                 value={sort}
                 options={selectOptions}
                 placeholder="Sắp xếp theo tổng tiền đã mua"
@@ -303,20 +339,23 @@ function UserManagement() {
             </Button>
           </div>
           <ItemTable
+            loading={isLoading}
             scroll={{ y: 380 }}
-            dataSource={users}
+            dataSource={appContext?.saveUser}
             columns={columns}
             pagination={false}
           />
         </div>
       </div>
-      {users?.length > 0 ? (
+      {appContext?.saveUser?.length < 1 && !isLoading ? (
+        <div className="no-client">Không có thông tin khách hàng nào !</div>
+      ) : (
         <ItemPagination>
           <Pagination
             current={page} // page hiện tại
             pageSize={limit} // tổng số sp hiện trên 1 page
             total={totalUsers} //tổng số lương thông tin người dùng
-            onChange={handleChangePage} // khi click vào page hàm onchange này sẽ set page vừa click vào state page
+            onChange={(page) => setPage(page)} // khi click vào page hàm onchange này sẽ set page vừa click vào state page
           />
           <div className="quantity-user">
             Hiển thị thông tin khách hàng từ thứ {(page - 1) * limit + 1} đến{" "}
@@ -331,8 +370,6 @@ function UserManagement() {
             trên 1 trang.
           </div>
         </ItemPagination>
-      ) : (
-        <div className="no-client">Không có thông tin khách hàng nào !</div>
       )}
 
       <ItemModalForm
@@ -497,15 +534,18 @@ function UserManagement() {
         open={isOpenModalDelete}
         onOk={handleDeleteClient}
         onCancel={handleCancelModalDelete}
-        width={350}
+        width={500}
+        centered
       >
-        <img
-          className="icon-delete"
-          src="https://img.myloview.com/posters/trash-can-icon-delete-remove-symbol-dustbin-recycle-bin-icon-garbage-can-400-196758048.jpg"
-          alt=""
-        />
-        <div className="title-modal-delete">
-          Bạn có chắc chắn muốn xóa thông tin này ?
+        <div className="notification">
+          <img
+            className="icon-delete"
+            src="https://img.myloview.com/posters/trash-can-icon-delete-remove-symbol-dustbin-recycle-bin-icon-garbage-can-400-196758048.jpg"
+            alt=""
+          />
+          <div className="title-modal-delete">
+            Bạn có chắc chắn muốn xóa thông tin này ?
+          </div>
         </div>
       </ItemModaleDelete>
     </WrapperInformation>

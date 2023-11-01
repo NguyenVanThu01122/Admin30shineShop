@@ -41,8 +41,9 @@ export const WrapperInformation = styled.div`
       font-weight: bold;
       height: 40px;
       gap: 8px;
-      color: white;
+      color: white !important;
       background: orange;
+      border: none;
       &:hover {
         filter: brightness(0.8); // giảm độ sáng của phần tử
       }
@@ -138,12 +139,19 @@ export const ItemModalForm = styled(Modal)`
 
 // item css modal deleteClient
 export const ItemModaleDelete = styled(Modal)`
-  text-align: center;
-  .icon-delete {
-    width: 100px;
-  }
-  .title-modal-delete {
-    font-weight: bold;
-    font-size: large;
+  .notification {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    .icon-delete {
+      width: 70px;
+      width: 70px;
+      margin: auto;
+    }
+    .title-modal-delete {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: large;
+    }
   }
 `;

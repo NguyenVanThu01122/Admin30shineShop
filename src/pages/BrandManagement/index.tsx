@@ -1,13 +1,19 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Form, Input, Pagination, Select, message } from "antd";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useCallback, useContext, useState } from "react";
 import iconDelete from "../../images/icon-delete.svg";
 import iconEdit from "../../images/icon-edit.svg";
 
-import { saveListBrand } from "../../redux/actions/productManagenment";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { AppContext } from "../../context";
 import { privateAxios } from "../../service/axios";
+import {
+  addBrand,
+  deleteBrand,
+  getListBrand,
+  updateBrand,
+} from "../../service/brand";
 import {
   ItemModal,
   ItemPagination,
@@ -46,20 +52,40 @@ export function BrandManagement() {
   const [listBrandId, setListBrandId] = useState<any>([]);
   const [image, setImage] = useState<any>("");
 
-  const brands = useSelector((state: any) => state?.app?.listBrand);
-  const dispatch = useDispatch();
   const [form] = Form.useForm();
+  const appContext = useContext(AppContext); // dùng useContext để truy xuất vào context
+
+  const queryClient = useQueryClient();
+
+  // dùng useQuery thao tác với dữ liệu
+  const { isLoading } = useQuery(
+    ["getListBrand", keyword, sortDate, page, limit],
+    () =>
+      getListBrand({
+        keyword,
+        sortDate,
+        page,
+        limit,
+      }),
+    {
+      onSuccess: (data: any) => {
+        setTotalBrands(data.data?.totalBrands);
+        appContext?.setSaveBrands(data.data?.data);
+      },
+      onError: (err: any) => {},
+    }
+  );
 
   // hàm xử lý chọn tất cả checkbox
-  const handleClickCheckboxAll = () => {
+  const handleClickCheckboxAll = useCallback(() => {
     const checkbox = (document.getElementById("checkbox-all") as any).checked;
     if (checkbox) {
-      const arrIdBrand = brands.map((item: any) => item?.id);
+      const arrIdBrand = appContext?.saveBrands.map((item: any) => item?.id);
       setListBrandId(arrIdBrand);
     } else {
       setListBrandId([]);
     }
-  };
+  }, [appContext]);
 
   // xử lý colunms của table
   const colunms = [
@@ -142,24 +168,53 @@ export function BrandManagement() {
     },
   ];
 
-  // hàm lấy danh sách thương hiêu
-  const handleGetListBrand = () => {
-    const params = {
-      keyword,
-      sortDate,
-      page,
-      limit,
-    };
-    privateAxios
-      .get("/admin/brand", {
-        params,
-      })
-      .then((res) => {
-        dispatch(saveListBrand(res.data?.data));
-        setTotalBrands(res.data?.totalBrands);
-      })
-      .catch((error) => {});
-  };
+  // xử lý thêm brand
+  const mutationAddBrand = useMutation(
+    "addBrand",
+    (body: any) => addBrand(body),
+    {
+      onSuccess: (data) => {
+        message.success(data.data?.message);
+        handelCancelModal();
+        queryClient.refetchQueries(["getListBrand"]);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý sửa brand
+  const mutationEditBrand = useMutation(
+    "editBrand",
+    (payload: any) => updateBrand(payload.id, payload.body),
+    {
+      onSuccess: (data) => {
+        message.success(data.data?.message);
+        queryClient.refetchQueries(["getListBrand"]);
+        handelCancelModal();
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý xóa brand
+  const mutationDeleteBrand = useMutation(
+    "deleteBrand",
+    (id: string) => deleteBrand(id),
+    {
+      onSuccess: (data) => {
+        message.success(data.data?.message);
+        queryClient.refetchQueries(["getListBrand"]);
+        handleCancelDelete();
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
 
   // hàm xử lý checkbox
   const handleClickCheckbox = (id: string) => {
@@ -186,56 +241,32 @@ export function BrandManagement() {
         name: value?.name,
         image,
       };
-      privateAxios
-        .put(`/admin/brand/${idBrand?.id}`, bodyUpdate)
-        .then((res) => {
-          message.success(res.data?.message);
-          handleGetListBrand();
-          handelCancelModal();
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationEditBrand.mutate({
+        id: idBrand?.id,
+        body: bodyUpdate,
+      });
     } else {
       const bodyCreate = {
         name: value?.name,
         image, // Chỗ này gửi đường dẫn ảnh base64 string lên, được lưu ở state
       };
-      privateAxios
-        .post("/admin/brand/", bodyCreate)
-        .then((res) => {
-          message.success(res.data?.message);
-          handelCancelModal();
-          handleGetListBrand();
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationAddBrand.mutate(bodyCreate);
     }
   };
 
   // hàm xóa 1 thương hiệu
-  const handleDeleteOne = () => {
-    privateAxios
-      .delete(`admin/brand/${idBrand?.id}`)
-      .then((res) => {
-        message.success(res.data?.message);
-        handleGetListBrand();
-        handleCancelDelete();
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
-  };
+  const handleDeleteOne = useCallback(() => {
+    mutationDeleteBrand.mutate(idBrand?.id);
+  }, [idBrand?.id]);
 
   // hàm mở modal xóa tất cả thương hiệu
-  const showModalDeleteAll = () => {
+  const showModalDeleteAll = useCallback(() => {
     setIsOpenModalDelete(true);
     setIsDeleteAll(true);
-  };
+  }, []);
 
   // hàm xử lý xóa tất cả brand
-  const handleDeleteBrandAll = () => {
+  const handleDeleteBrandAll = useCallback(() => {
     const params = {
       idArr: listBrandId,
     };
@@ -243,7 +274,7 @@ export function BrandManagement() {
       .delete("/admin/brand/delete-many", { params })
       .then((res) => {
         message.success(res.data?.message);
-        handleGetListBrand();
+        queryClient.refetchQueries(["getListBrand"]);
         (document.getElementById("checkbox-all") as any).checked = false;
         setListBrandId([]);
         setIsDeleteAll(false);
@@ -252,10 +283,10 @@ export function BrandManagement() {
       .catch((error) => {
         message.error(error.response?.data?.message);
       });
-  };
+  }, [listBrandId]);
 
   // hàm mở modal cập nhật
-  const showModalUpdate = (record: any) => {
+  const showModalUpdate = useCallback((record: any) => {
     setIsOpenModal(true);
     setIdBrand(record);
     setEditBrand(record);
@@ -263,51 +294,55 @@ export function BrandManagement() {
     form.setFieldsValue({
       name: record?.name,
     });
-  };
+  }, []);
 
   // hàm hủy modal
-  const handelCancelModal = () => {
+  const handelCancelModal = useCallback(() => {
     setIsOpenModal(false);
     form.resetFields();
     setIdBrand("");
     setEditBrand(null);
     setImage("");
-  };
+  }, []);
 
   // hàm mở modal add brand
-  const showModalAddBrand = () => {
+  const showModalAddBrand = useCallback(() => {
     setIsOpenModal(true);
-  };
+  }, []);
+
   // hàm mở modal xóa 1 thương hiệu
-  const showModalDeleteOne = (record: any) => {
+  const showModalDeleteOne = useCallback((record: any) => {
     setIsOpenModalDelete(true);
     setIdBrand(record);
-  };
+  }, []);
 
   // hàm hủy modal xóa thương hiệu
-  const handleCancelDelete = () => {
+  const handleCancelDelete = useCallback(() => {
     setIsOpenModalDelete(false);
     setIsDeleteAll(false);
-  };
+  }, []);
+
   // hàm xử lý tìm kiếm thương hiệu
-  const handleChangeKeyword = (e: any) => {
+  const handleChangeKeyword = useCallback((e: any) => {
     setKeyword(e.target.value);
     setPage(1);
-  };
+  }, []);
+
   // hàm xử lý limit
-  const handChangeSelectLimit = (value: any) => {
+  const handChangeSelectLimit = useCallback((value: any) => {
     setLimit(value);
     setPage(1);
-  };
+  }, []);
+
   // hàm xử lý page
-  const handleChangePage = (page: number) => {
+  const handleChangePage = useCallback((page: number) => {
     setPage(page);
     setListBrandId([]);
     (document.getElementById("checkbox-all") as any).checked = false;
-  };
+  }, []);
 
   // hàm xử lý tải ảnh lên
-  const handleImageChange = (e: any) => {
+  const handleImageChange = useCallback((e: any) => {
     const file = e.target.files[0]; // Lấy giá trị file vừa tải lên và gắn vào biến file
     const reader = new FileReader();
     if (file) {
@@ -317,11 +352,8 @@ export function BrandManagement() {
       const base64String = reader.result; // Lưu trữ giá trị base64 string của ảnh vào biến base64String
       setImage(base64String); // Gắn giá trị base64 string thu được vào state image
     };
-  };
+  }, []);
 
-  useEffect(() => {
-    handleGetListBrand();
-  }, [keyword, page, limit, sortDate]);
   return (
     <WrapperBrandManagement>
       <div className="brand-management">
@@ -331,7 +363,7 @@ export function BrandManagement() {
             <div>Danh sách thương hiệu</div>
             {listBrandId?.length > 0 && (
               <Button onClick={showModalDeleteAll} className="delete-all">
-                Xóa tất cả thương hiệu
+                Xóa tất cả thương hiệu đã chọn
               </Button>
             )}
           </div>
@@ -365,11 +397,14 @@ export function BrandManagement() {
         <ItemTable
           scroll={{ y: 350 }}
           columns={colunms}
-          dataSource={brands}
+          dataSource={appContext?.saveBrands}
           pagination={false}
-        ></ItemTable>
+          loading={isLoading}
+        />
       </div>
-      {brands?.length > 0 ? (
+      {appContext?.saveBrands?.length < 1 && !isLoading ? (
+        <div className="no-brand">Không có thương hiệu nào !</div>
+      ) : (
         <ItemPagination>
           <Pagination
             current={page}
@@ -389,10 +424,7 @@ export function BrandManagement() {
             trên 1 trang.
           </div>
         </ItemPagination>
-      ) : (
-        <div className="no-brand">Không có thương hiệu nào !</div>
       )}
-
       <ItemModal
         centered={true}
         width={550}

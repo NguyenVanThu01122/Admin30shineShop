@@ -10,20 +10,23 @@ import {
   Table,
   message,
 } from "antd";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { AppContext } from "../../context";
 import iconDelete from "../../images/icon-delete.svg";
 import iconEdit from "../../images/icon-edit.svg";
-import { savelistProducts } from "../../redux/actions/productManagenment";
-import { privateAxios } from "../../service/axios";
+import {
+  addProduct,
+  deleteProduct,
+  getListproducts,
+  updateProduct,
+} from "../../service/product";
 import {
   ItemListProducts,
   ItemModalProduct,
   ItemPagination,
   WrapperProductManagement,
 } from "./styles";
-
 // xử lý các option của thẻ select
 const optionSelects = [
   { value: 5, label: 5 },
@@ -54,118 +57,172 @@ function ProductManagement() {
   const [idProduct, setIdProduct] = useState("");
   const [form] = Form.useForm(); // tạo đối tượng form và làm việc vs form
   const [image, setImage] = useState<any>("");
-  
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const products = useSelector((state: any) => state.app?.listProducts); // lấy listProduct trong store
+
+  const myRef = useRef<any>(null);
+  const appContext = useContext(AppContext);
+  const queryClient = useQueryClient();
+
+  const { isLoading } = useQuery(
+    ["getListProducts", page, limit, keyword],
+    () =>
+      getListproducts({
+        limit,
+        page,
+        keyword,
+      }),
+    {
+      onSuccess: (data) => {
+        appContext?.setSaveProducts(data.data?.data); // lưu data vào product
+        setTotalProducts(data.data?.totalProducts); // lấy số lượng sp res và lưu vào state totalProducts
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý thêm product
+  const mutationAddProduct = useMutation(
+    "add-new-product",
+    (payload: any) => addProduct(payload),
+    {
+      onSuccess: (data: any) => {
+        message.success(data.data?.message);
+        queryClient.invalidateQueries(["getListProducts"]); // gọi lại getlistProduct
+        cancelModalAddProduct();
+        setPage(1);
+        setKeyword("");
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý sửa product
+  const mutationEditProduct = useMutation(
+    "edit-product",
+    (payload: any) => updateProduct(payload.id, payload.body),
+    {
+      onSuccess: (data: any) => {
+        message.success(data.data?.message);
+        // queryClient.refetchQueries(["getListProducts"]); // ép buộc gọi lại
+        queryClient.invalidateQueries(["getListProducts"]); // đánh dấy query đã hết hạn
+        cancelModalAddProduct();
+        setEditProduct(null);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
+
+  // xử lý xóa product
+  const mutationDeleteProduct = useMutation(
+    "delete-product",
+    (id: string) => deleteProduct(id),
+    {
+      onSuccess: (data: any) => {
+        queryClient.refetchQueries(["getListProducts"]);
+        setIsDeleteProduct(false); // đóng modal khi xóa sp thành công
+        message.success(data.data?.message);
+      },
+      onError: (err: any) => {
+        message.error(err.response?.data?.message);
+      },
+    }
+  );
 
   // xử lý  các cột table
-  const columns = [
-    {
-      title: "STT",
-      dataIndex: "STT",
-      key: "STT",
-      render: (value: string, record: any, index: number) => {
-        return (page - 1) * limit + 1 + index;
+  const columns = useMemo(() => {
+    return [
+      {
+        title: "STT",
+        dataIndex: "STT",
+        key: "STT",
+        render: (value: string, record: any, index: number) => {
+          return (page - 1) * limit + 1 + index;
+        },
       },
-    },
-    {
-      title: "Tên sản phẩm",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Danh mục",
-      dataIndex: "category",
-      key: "category",
-      render: (value: string) => {
-        return <div className="title-category">{value}</div>;
+      {
+        title: "Tên sản phẩm",
+        dataIndex: "name",
+        key: "name",
       },
-    },
-    {
-      title: "Thương hiệu",
-      dataIndex: "brand",
-      key: "brand",
-      render: (value: string) => {
-        return <div className="brand">{value}</div>;
+      {
+        title: "Danh mục",
+        dataIndex: "category",
+        key: "category",
+        render: (value: string) => {
+          return <div className="title-category">{value}</div>;
+        },
       },
-    },
-    {
-      title: "Số lượng",
-      dataIndex: "quantity",
-      key: "quantity",
-      render: (value: number) => {
-        return <div className="quantity">{value}</div>;
+      {
+        title: "Thương hiệu",
+        dataIndex: "brand",
+        key: "brand",
+        render: (value: string) => {
+          return <div className="brand">{value}</div>;
+        },
       },
-    },
-    {
-      title: "Giá gốc",
-      dataIndex: "originPrice",
-      key: "originPrice",
-      render: (value: number) => {
-        return <div className="origin-price">{value} VND</div>;
+      {
+        title: "Số lượng",
+        dataIndex: "quantity",
+        key: "quantity",
+        render: (value: number) => {
+          return <div className="quantity">{value}</div>;
+        },
       },
-    },
-    {
-      title: "Giá sale",
-      dataIndex: "salePrice",
-      key: "salePrice",
-      render: (value: number) => {
-        return <div className="sale-price">{value} VND</div>;
+      {
+        title: "Giá gốc",
+        dataIndex: "originPrice",
+        key: "originPrice",
+        render: (value: number) => {
+          return <div className="origin-price">{value} VND</div>;
+        },
       },
-    },
-    {
-      title: "Ảnh sản phẩm",
-      dataIndex: "image",
-      key: "image",
-      render: (value: string) => {
-        // value là giá trị cho key
-        return <img src={value} alt="" className="image-product" />;
+      {
+        title: "Giá sale",
+        dataIndex: "salePrice",
+        key: "salePrice",
+        render: (value: number) => {
+          return <div className="sale-price">{value} VND</div>;
+        },
       },
-    },
-    {
-      title: "Hành động",
-      dataIndex: "action",
-      key: "action",
-      render: (value: any, record: any) => {
-        // value là giá trị của key, record đại diện cho các đối tượng
-        return (
-          <div className="group-icon">
-            <img
-              src={iconEdit}
-              alt=""
-              onClick={() => showModalEditProduct(record)}
-            />
-            <img
-              onClick={() => showModalDeleteProduct(record?.id)}
-              src={iconDelete}
-              alt=""
-            />
-          </div>
-        );
+      {
+        title: "Ảnh sản phẩm",
+        dataIndex: "image",
+        key: "image",
+        render: (value: string) => {
+          // value là giá trị cho key
+          return <img src={value} alt="" className="image-product" />;
+        },
       },
-    },
-  ];
+      {
+        title: "Hành động",
+        dataIndex: "action",
+        key: "action",
+        render: (value: any, record: any) => {
+          // value là giá trị của key, record đại diện cho các đối tượng
+          return (
+            <div className="group-icon">
+              <img
+                src={iconEdit}
+                alt=""
+                onClick={() => showModalEditProduct(record)}
+              />
+              <img
+                onClick={() => showModalDeleteProduct(record?.id)}
+                src={iconDelete}
+                alt=""
+              />
+            </div>
+          );
+        },
+      },
+    ];
+  }, [page, limit]);
 
-  // hàm lấy danh sách sản phẩm
-  const handleGetListProduct = () => {
-    const params = {
-      keyword: keyword,
-      page: page,
-      limit: limit,
-    };
-    privateAxios
-      .get("/admin/product", {
-        params,
-      })
-      .then((res) => {
-        dispatch(savelistProducts(res.data?.data)); // dùng dispatch bắn action lên reducers
-        setTotalProducts(res.data?.totalProducts); // lấy số lượng sp res và lưu vào state totalProducts
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
-  };
   // hàm tạo mới sản phẩm và cập nhật sản phẩm theo đkiện
   const handleFinishForm = (value: any) => {
     if (editProduct) {
@@ -176,19 +233,12 @@ function ProductManagement() {
         quantity: value?.quantity,
         originPrice: value?.originPrice,
         salePrice: value?.salePrice,
-        image,  
+        image,
       };
-      privateAxios
-        .put(`/admin/product/${editProduct?.id}`, editBody)
-        .then((res) => {
-          message.success(res.data?.message);
-          handleGetListProduct();
-          handleCacelModalAddProduct();
-          setEditProduct(null);
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationEditProduct.mutate({
+        id: editProduct?.id,
+        body: editBody,
+      });
     } else {
       const addBody = {
         name: value?.name,
@@ -199,18 +249,7 @@ function ProductManagement() {
         salePrice: value?.salePrice,
         image,
       };
-      privateAxios
-        .post("/admin/product", addBody)
-        .then((res) => {
-          message.success(res.data?.message);
-          handleGetListProduct();
-          handleCacelModalAddProduct();
-          setPage(1);
-          setKeyword("");
-        })
-        .catch((error) => {
-          message.error(error.response?.data?.message);
-        });
+      mutationAddProduct.mutate(addBody);
     }
   };
 
@@ -244,65 +283,44 @@ function ProductManagement() {
   };
 
   // hàm xóa sản phẩm
-  const handleDeleteProduct = () => {
-    privateAxios
-      .delete(`/admin/product/${idProduct}`)
-      .then((res) => {
-        handleGetListProduct(); // gọi lại hàm để cập nhật dữ liệu mới
-        setIsDeleteProduct(false); // đóng modal khi xóa sp thành công
-        message.success(res.data?.message);
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
-  };
+  const handleDeleteProduct = useCallback(() => {
+    mutationDeleteProduct.mutate(idProduct);
+  }, [idProduct]);
 
   // hàm gửi form lên server
-  const handleSubmitForm = () => {
+  const handleSubmitForm = useCallback(() => {
     form.submit();
-  };
+  }, []);
 
   // hàm xử lý lấy giá trị input rồi sét giá trị vào state keyword
-  const handleChangeKeyword = (e: any) => {
+  const handleChangeKeyword = useCallback((e: any) => {
     setKeyword(e.target.value);
     setPage(1); // set page 1 với mục đích hiển thị sản phẩm tìm kiếm ở  page 1 (ví dụ: đang ở page 2 và limit la 10, khi tìm kiếm sp ở page 2 thì sp tìm kiếm chỉ có 1, và muốn hiển thị sp tìm kiếm ở page 2, thì sp tìm kiếm phải có số lượng vượt quá số lượng limit ở page 1 )
-  };
+  }, []);
 
-  // hàm xử lý khi click vào page thì set lại giá trị của page vào state page
-  const handleChangePage = (page: number) => {
-    setPage(page);
-  };
-  const handleChangeSelect = (value: number) => {
+  const handleChangeSelect = useCallback((value: number) => {
     setLimit(value);
     setPage(1); //setpage về trang 1 để hiển thị tất cả sản phẩm (nếu k set về page 1 thì sẽ sảy ra trường hợp người dùng chọn quá số lượng sp render trên 1 trang và sẽ k có dữ liệu hiển thị)
-  };
+  }, []);
 
   // hàm này xử lý mở modal thêm sản phẩm
-  const showModalAddProduct = () => {
+  const showModalAddProduct = useCallback(() => {
     setIsOpenModal(true);
     setEditProduct(null); // set về null nhằm thỏa mãn đkiện nếu editProduct là false thì hiện title 'Thêm sản phẩm ' trong modal
-  };
+  }, []);
 
   // hàm này xử lý hủy bỏ modal thêm sản phẩm
-  const handleCacelModalAddProduct = () => {
+  const cancelModalAddProduct = useCallback(() => {
     setIsOpenModal(false);
     form.resetFields();
     setImage("");
-  };
+  }, []);
+
   // hàm mở modal xóa sản phẩm
-  const showModalDeleteProduct = (id: string) => {
+  const showModalDeleteProduct = useCallback((id: string) => {
     setIsDeleteProduct(true);
     setIdProduct(id); // lưu trữ id sp vào state idProduct
-  };
-  // hàm hủy bỏ modal xóa sản phẩm
-  const handleCancelModalDeleteProduct = () => {
-    setIsDeleteProduct(false);
-  };
-
-  // useEffect này sẽ dc gọi lại 1 lần sau lần render thành công đâu tiên và dc gọi lại khi các biến phụ thuộc thay đổi giá trị.
-  useEffect(() => {
-    handleGetListProduct();
-  }, [page, limit, keyword]);
+  }, []);
 
   return (
     <WrapperProductManagement>
@@ -323,28 +341,35 @@ function ProductManagement() {
                   allowClear={true} // thêm icon x
                 />
               </div>
-              <Button onClick={showModalAddProduct} className="button-add">
+              <Button
+                ref={myRef}
+                onClick={showModalAddProduct}
+                className="button-add"
+              >
                 <FontAwesomeIcon className="plus" icon={faPlus} />
                 <span>Thêm sản phẩm</span>
               </Button>
             </div>
             <Table
+              loading={isLoading}
               pagination={false} // hủy phân trang của table
               scroll={{ y: 350 }} // khi quá 350 thì có thanh kéo scroll
               columns={columns} // title các cột
-              dataSource={products} // dữ liệu được đổ vào các cột
+              dataSource={appContext?.saveProducts} // dữ liệu được đổ vào các cột
               className="my-table"
             />
           </div>
         </ItemListProducts>
       </div>
-      {products?.length > 0 ? (
+      {appContext?.saveProducts?.length < 1 && !isLoading ? (
+        <div className="no-product">Không có sản phẩm nào !</div>
+      ) : (
         <ItemPagination>
           <Pagination
             current={page}
             total={totalProducts}
             pageSize={limit}
-            onChange={handleChangePage}
+            onChange={(page)=> setPage(page)}
           />
           <div className="information_amount_products">
             <div>
@@ -360,13 +385,11 @@ function ProductManagement() {
             <div>trên 1 trang</div>
           </div>
         </ItemPagination>
-      ) : (
-        <div className="no-product">Không có sản phẩm nào !</div>
       )}
 
       <ItemModalProduct //modal form xử lý thêm sản phẩm
         open={isOpenModal}
-        onCancel={handleCacelModalAddProduct}
+        onCancel={cancelModalAddProduct}
         footer={false}
       >
         <Form
@@ -555,7 +578,7 @@ function ProductManagement() {
           <div className="group-button">
             <Button
               size="large"
-              onClick={handleCacelModalAddProduct}
+              onClick={cancelModalAddProduct}
               className="cencel-button"
             >
               Hủy
@@ -573,7 +596,7 @@ function ProductManagement() {
           <div className="group-button">
             <Button
               size="large"
-              onClick={handleCacelModalAddProduct}
+              onClick={cancelModalAddProduct}
               className="cencel-button"
             >
               Hủy
@@ -592,7 +615,7 @@ function ProductManagement() {
         centered
         title="Bạn có chắn chắn muốn xóa sản phẩm này không ?"
         open={isDeleteProduct} // cái này đổi tên lại thành showModalDelete thì hợp lý hơn, đặt tên isDelete không có ý nghĩa lắm
-        onCancel={handleCancelModalDeleteProduct}
+        onCancel={cancelModalAddProduct}
         onOk={handleDeleteProduct}
       ></Modal>
     </WrapperProductManagement>

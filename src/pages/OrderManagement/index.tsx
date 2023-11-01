@@ -9,12 +9,11 @@ import {
   message,
 } from "antd";
 import moment from "moment";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import { StringLiteral } from "typescript";
-import { saveListOrder } from "../../redux/actions/productManagenment";
+import { useCallback, useContext, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "react-query";
+import { AppContext } from "../../context";
 import { privateAxios } from "../../service/axios";
+import { getListOrder } from "../../service/order";
 import {
   ItemModalTimeLine,
   ItemPagination,
@@ -108,260 +107,275 @@ function OrderList() {
   const [isOpenStatusOrder, setIsOpenStatusOrder] = useState<any>(false);
   const [saveTimeline, setSaveTimeline] = useState([]);
   const [updateStatus, setUpdateStatus] = useState("");
-  console.log(orderStatus);
 
-  const dispatch = useDispatch();
-  const params = useParams();
-  const listOrder = useSelector((state: any) => state.app.listOrder);
+  const appContext = useContext(AppContext);
+  const queryClient = useQueryClient();
 
-  // hàm lấy danh sách order
-  const handleGetlistOrder = () => {
-    const params = {
+  const { isLoading } = useQuery(
+    [
+      "getListOrder",
+      page,
+      limit,
       keyword,
-      sortMoney,
       methodPayment,
       orderStatus,
+      sortMoney,
       startDate,
       endDate,
-      limit,
-      page,
-    };
-    privateAxios
-      .get("/admin/order", { params })
-      .then((res) => {
-        dispatch(saveListOrder(res.data?.data));
-        setTotalOrders(res.data?.totalOrders);
-      })
-      .catch((error) => {});
-  };
+    ],
+    () =>
+      getListOrder({
+        keyword,
+        sortMoney,
+        methodPayment,
+        orderStatus,
+        startDate,
+        endDate,
+        limit,
+        page,
+      }),
+    {
+      onSuccess: (data) => {
+        setTotalOrders(data.data?.totalOrders);
+        appContext?.setListOrder(data?.data?.data);
+      },
+      onError: (err: any) => {},
+    }
+  );
 
   //  hàm xử lý tìm kiếm
-  const handleChangeKeyword = (e: any) => {
+  const handleChangeKeyword = useCallback((e: any) => {
     setKeyword(e.target.value);
     setPage(1); // set page 1 với mục đích hiển thị order tìm kiếm ở  page 1 (ví dụ: đang ở page 2 và limit la 10, khi tìm kiếm order ở page 2 thì order tìm kiếm chỉ có 1, và muốn hiển thị order tìm kiếm ở page 2, thì order tìm kiếm phải có số lượng vượt quá số lượng limit ở page 1 )
-  };
+  }, []);
+
   // xử lý chọn trạng thái đơn hàng
-  const handleSelectStatusOrder = (value: any) => {
+  const handleSelectStatusOrder = useCallback((value: any) => {
     setOrderStatus(value);
     setPage(1);
-  };
+  }, []);
+
   // xử lý select limit
-  const handleSelectLimit = (value: number) => {
+  const handleSelectLimit = useCallback((value: number) => {
     setLimit(value);
     setPage(1); // set page về 1 để luôn luôn dc hiển thị đơn hàng, và tránh tình trạng người dùng chọn limit quá tổng số lượng đơn hàng và trả về k có đơn hàng
-  };
+  }, []);
 
   // xử lý columns table
-  const columns = [
-    {
-      title: "STT",
-      dataIndex: "orderId",
-      key: "orderId",
-      width: 60,
-      render: (value: string, record: any, index: number) => {
-        return <div>{(page - 1) * limit + 1 + index}</div>;
+  const columns = useMemo(() => {
+    return [
+      {
+        title: "STT",
+        dataIndex: "orderId",
+        key: "orderId",
+        width: 60,
+        render: (value: string, record: any, index: number) => {
+          return <div>{(page - 1) * limit + 1 + index}</div>;
+        },
       },
-    },
-    {
-      title: "Tên khách hàng",
-      dataIndex: "userInfo",
-      key: "userInfo",
+      {
+        title: "Tên khách hàng",
+        dataIndex: "userInfo",
+        key: "userInfo",
 
-      render: (value: any) => {
-        return <div>{value?.name}</div>;
+        render: (value: any) => {
+          return <div>{value?.name}</div>;
+        },
       },
-    },
-    {
-      title: "Emali",
-      dataIndex: "userInfo",
-      key: "userInfo",
+      {
+        title: "Emali",
+        dataIndex: "userInfo",
+        key: "userInfo",
 
-      render: (value: any) => {
-        return <div>{value?.email}</div>;
+        render: (value: any) => {
+          return <div>{value?.email}</div>;
+        },
       },
-    },
-    {
-      title: "Các sản phẩm đã đặt mua",
-      dataIndex: "",
-      key: "",
-      render: (value: any, record: any) => {
-        return (
-          <Popover
-            content={record?.productsInfo?.map((item: any) => (
-              <div
-                style={{
-                  width: "600px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "20px",
-                  padding: "10px",
-                  borderBottom: "1px solid rgba(167, 166, 166, 0.201)",
-                  borderTop: "1px solid rgba(167, 166, 166, 0.201)",
-                }}
-              >
-                <img style={{ width: "80px" }} src={item?.image} alt="" />
-                <div style={{ color: "gray", width: "50%" }}>{item?.name}</div>
-                <div style={{ color: "gray", width: "10%" }}>
-                  {item?.price}
-                  <span>đ</span>
-                </div>
-                <div style={{ fontSize: "20px", width: "5%" }}>
-                  {item?.amount}x
-                </div>
+      {
+        title: "Các sản phẩm đã đặt mua",
+        dataIndex: "",
+        key: "",
+        render: (value: any, record: any) => {
+          return (
+            <Popover
+              content={record?.productsInfo?.map((item: any) => (
                 <div
                   style={{
-                    fontSize: "17px",
-                    color: "red",
-                    fontWeight: "700",
-                    width: "15%",
+                    width: "600px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "20px",
+                    padding: "10px",
+                    borderBottom: "1px solid rgba(167, 166, 166, 0.201)",
+                    borderTop: "1px solid rgba(167, 166, 166, 0.201)",
                   }}
                 >
-                  {item?.amount * item?.price}
-                  <span>đ</span>
-                </div>
-              </div>
-            ))}
-            title="Các sản phẩm đã đặt mua"
-          >
-            <div className="hover-text">Hover vào đây để xem chi tiết</div>
-          </Popover>
-        );
-      },
-    },
-    {
-      title: "Tổng tiền phải trả",
-      dataIndex: "totalPrice",
-      key: "totalPrice",
-      render: (value: number) => {
-        return <div className="totalPrice">{value} VND</div>;
-      },
-    },
-    {
-      title: "Trạng thái đơn hàng",
-      dataIndex: "orderStatus",
-      key: "orderStatus",
-      width: "145px",
-      render: (value: string) => {
-        return (
-          <div
-            className={`${
-              value === "processing"
-                ? "processing"
-                : value === "confirmed"
-                ? "confirmed"
-                : value === "in_transit"
-                ? "in_transit"
-                : value === "delivered"
-                ? "delivered"
-                : value === "canceled"
-                ? "canceled"
-                : ""
-            }`}
-          >
-            {arrOrderStatus(value)}
-          </div>
-        );
-      },
-    },
-    {
-      title: "Phương thức thanh toán",
-      dataIndex: "methodPayment",
-      key: "methodPayment",
-    },
-    {
-      title: "Ghi chú đơn hàng",
-      dataIndex: "noteOrder",
-      key: "noteOrder",
-      render: (value: string) => {
-        return value || "-";
-      },
-    },
-    {
-      title: "Ngày đặt hàng",
-      dataIndex: "userInfo",
-      key: "userInfo",
-      render: (value: any) => {
-        const isoString = value?.createdAt; // láy chuỗi time ios
-        const formattedDate = moment(isoString).format("HH:mm DD/MM/YYYY"); // dùng monment biến đổi ra chuỗi ngày tháng mong muốn
-        return <div>{formattedDate}</div>;
-      },
-    },
-    {
-      title: "Timeline",
-      dataIndex: "",
-      key: "",
-      render: (value: string, record: any) => {
-        return (
-          <div
-            onClick={() => handleGetTimeline(record)}
-            className="timeline-order"
-          >
-            Click vào đây để xem chi tiết
-          </div>
-        );
-      },
-    },
-    {
-      title: "Hành động",
-      dataIndex: "",
-      key: "",
-      render: (value: string, record: any) => {
-        console.log(record);
-        return (
-          <div>
-            {isOpenStatusOrder ? (
-              <div>
-                <Select
-                  placeholder="chọn trạng thái"
-                  options={selectChangeStatusOrder}
-                  onChange={(value) => setUpdateStatus(value)}
-                ></Select>
-                <div className="select-button">
-                  <Button
-                    className="button-update"
-                    onClick={() => handleUpdateStatusOrder(record)}
-                  >
-                    Cập nhật
-                  </Button>
-                  <Button
-                    className="button-cancel"
-                    onClick={handleCancelChangeStatusOrder}
-                  >
-                    Hủy
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {arrOrderStatus(record?.orderStatus) === "Đã hủy" &&
-                arrOrderStatus(record?.orderStatus) === "Đã giao hàng" ? (
-                  ""
-                ) : (
-                  <div
-                    className="change-order-status"
-                    onClick={() => handleChangeStatusOrder(record?.orderId)}
-                  >
-                    Thay đổi trạng thái đơn hàng
+                  <img style={{ width: "80px" }} src={item?.image} alt="" />
+                  <div style={{ color: "gray", width: "50%" }}>
+                    {item?.name}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-        );
+                  <div style={{ color: "gray", width: "10%" }}>
+                    {item?.price}
+                    <span>đ</span>
+                  </div>
+                  <div style={{ fontSize: "20px", width: "5%" }}>
+                    {item?.amount}x
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "17px",
+                      color: "red",
+                      fontWeight: "700",
+                      width: "15%",
+                    }}
+                  >
+                    {item?.amount * item?.price}
+                    <span>đ</span>
+                  </div>
+                </div>
+              ))}
+              title="Các sản phẩm đã đặt mua"
+            >
+              <div className="hover-text">Hover vào đây để xem chi tiết</div>
+            </Popover>
+          );
+        },
       },
-    },
-  ];
+      {
+        title: "Tổng tiền phải trả",
+        dataIndex: "totalPrice",
+        key: "totalPrice",
+        render: (value: number) => {
+          return <div className="totalPrice">{value} VND</div>;
+        },
+      },
+      {
+        title: "Trạng thái đơn hàng",
+        dataIndex: "orderStatus",
+        key: "orderStatus",
+        width: "145px",
+        render: (value: string) => {
+          return (
+            <div
+              className={`${
+                value === "processing"
+                  ? "processing"
+                  : value === "confirmed"
+                  ? "confirmed"
+                  : value === "in_transit"
+                  ? "in_transit"
+                  : value === "delivered"
+                  ? "delivered"
+                  : value === "canceled"
+                  ? "canceled"
+                  : ""
+              }`}
+            >
+              {arrOrderStatus(value)}
+            </div>
+          );
+        },
+      },
+      {
+        title: "Phương thức thanh toán",
+        dataIndex: "methodPayment",
+        key: "methodPayment",
+      },
+      {
+        title: "Ghi chú đơn hàng",
+        dataIndex: "noteOrder",
+        key: "noteOrder",
+        render: (value: string) => {
+          return value || "-";
+        },
+      },
+      {
+        title: "Ngày đặt hàng",
+        dataIndex: "userInfo",
+        key: "userInfo",
+        render: (value: any) => {
+          const isoString = value?.createdAt; // láy chuỗi time ios
+          const formattedDate = moment(isoString).format("HH:mm DD/MM/YYYY"); // dùng monment biến đổi ra chuỗi ngày tháng mong muốn
+          return <div>{formattedDate}</div>;
+        },
+      },
+      {
+        title: "Timeline",
+        dataIndex: "",
+        key: "",
+        render: (value: string, record: any) => {
+          return (
+            <div
+              onClick={() => handleGetTimeline(record)}
+              className="timeline-order"
+            >
+              Click vào đây để xem chi tiết
+            </div>
+          );
+        },
+      },
+      {
+        title: "Hành động",
+        dataIndex: "",
+        key: "",
+        render: (value: string, record: any) => {
+          console.log(record);
+          return (
+            <div>
+              {isOpenStatusOrder ? (
+                <div>
+                  <Select
+                    placeholder="chọn trạng thái"
+                    options={selectChangeStatusOrder}
+                    onChange={(value) => setUpdateStatus(value)}
+                  ></Select>
+                  <div className="select-button">
+                    <Button
+                      className="button-update"
+                      onClick={() => handleUpdateStatusOrder(record)}
+                    >
+                      Cập nhật
+                    </Button>
+                    <Button
+                      className="button-cancel"
+                      onClick={handleCancelChangeStatusOrder}
+                    >
+                      Hủy
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {arrOrderStatus(record?.orderStatus) === "Đã hủy" &&
+                  arrOrderStatus(record?.orderStatus) === "Đã giao hàng" ? (
+                    ""
+                  ) : (
+                    <div
+                      className="change-order-status"
+                      onClick={() => handleChangeStatusOrder(record?.orderId)}
+                    >
+                      Thay đổi trạng thái đơn hàng
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        },
+      },
+    ];
+  }, [limit, page]);
 
   // hàm thay đổi trạng thái đơn hàng
-  const handleChangeStatusOrder = (orderId: StringLiteral) => {
+  const handleChangeStatusOrder = useCallback((orderId: String) => {
     setIsOpenStatusOrder(orderId);
-  };
+  }, []);
+
   // hàm hủy thay đổi trạng thái đơn hàng
-  const handleCancelChangeStatusOrder = () => {
+  const handleCancelChangeStatusOrder = useCallback(() => {
     setIsOpenStatusOrder(false);
-  };
+  }, []);
 
   // hàm cập nhật trạng thái đơn hàng
   const handleUpdateStatusOrder = (record: any) => {
@@ -377,13 +391,14 @@ function OrderList() {
       .put(`/admin/order/${record?.orderId}`, orderStatus)
       .then((res) => {
         message.success(res.data?.message);
-        handleGetlistOrder();
+        queryClient.refetchQueries(["getlistOrder"]);
         setIsOpenStatusOrder(false);
       })
       .catch((error) => {
         message.error(error.response?.data?.message);
       });
   };
+  
   // hàm mở modal TimeLine
   const showModalTimeline = () => {
     setIsOpenModal(true);
@@ -404,18 +419,6 @@ function OrderList() {
       .catch((error) => {});
   };
 
-  useEffect(() => {
-    handleGetlistOrder();
-  }, [
-    page,
-    limit,
-    keyword,
-    methodPayment,
-    orderStatus,
-    sortMoney,
-    startDate,
-    endDate,
-  ]);
   return (
     <WrapperOrderManagement>
       <div className="order-management">
@@ -467,15 +470,18 @@ function OrderList() {
 
           <ItemTable
             className="custom-table"
+            loading={isLoading}
             columns={columns}
-            dataSource={listOrder}
+            dataSource={appContext?.saveListOrder}
             scroll={{ y: 350 }}
             pagination={false}
             size="middle"
           ></ItemTable>
         </div>
 
-        {listOrder?.length > 0 ? (
+        {appContext?.saveListOrder?.length < 1 && !isLoading ? (
+          <div className="no-order">không có đơn hàng nào !</div>
+        ) : (
           <ItemPagination>
             <Pagination
               current={page}
@@ -496,8 +502,6 @@ function OrderList() {
               trên 1 trang.
             </div>
           </ItemPagination>
-        ) : (
-          <div className="no-order">không có đơn hàng nào !</div>
         )}
       </div>
 
