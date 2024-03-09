@@ -1,6 +1,8 @@
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { Provider } from "react-redux";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { applyMiddleware, compose, createStore } from "redux";
 import App from "./App";
 import { AppProvider } from "./context";
@@ -23,6 +25,7 @@ root.render(
         <App />
       </AppProvider>
     </Provider>
+    <ToastContainer />
   </QueryClientProvider>
 );
 

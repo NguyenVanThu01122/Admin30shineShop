@@ -3,49 +3,9 @@ import { styled } from "styled-components";
 
 export const WrapperOrderManagement = styled.div`
   width: calc(100% - 300px);
+  height: 100vh;
+  background-color: white;
   /* flex: 1; */
-  padding: 0px 20px;
-  .order-management {
-    & > div:first-child {
-      font-weight: bold;
-      font-size: 25px;
-      padding: 30px 20px;
-    }
-  }
-  .item-order {
-    background-color: rgb(247, 247, 247);
-    border-radius: 8px;
-    padding: 15px;
-    .list-order {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-      & > div:first-child {
-        font-weight: 600;
-        font-size: 18px;
-      }
-      .custom-date {
-        display: flex;
-        gap: 10px;
-      }
-    }
-    .select-item {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      .form-item {
-        .input-keyword {
-          width: 280px;
-        }
-      }
-    }
-  }
-  .no-order {
-    text-align: center;
-    color: red;
-    font-style: italic;
-  }
 `;
 
 // css table
@@ -104,23 +64,25 @@ export const ItemTable = styled(Table)`
     text-decoration: underline;
     cursor: pointer;
   }
-.select-button{
-  display: flex;
-  gap: 6px;
-  margin-top: 10px;
-  .button-update{
-    background-color: orange;
-    font-weight: 600;
-    color: gray;
+  .select-button {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    .button-update {
+      background-color: orange;
+      font-weight: 600;
+      color: gray;
+    }
   }
-}
 `;
 
 // css pagination
 export const ItemPagination = styled.div`
   display: flex;
   justify-content: space-between;
-  padding: 20px;
+  align-items: center;
+  margin-top: 20px;
+  padding: 0px 20px;
   .custom-total-Orders {
     display: flex;
     align-items: center;

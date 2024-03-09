@@ -5,18 +5,7 @@ export const WrapperSideBar = styled.div`
   background: rgb(9, 23, 59);
   width: 300px;
   height: 100vh;
-  padding: 20px;
-  .logOut{
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 30px;
-    &:hover{
-    color: red !important;
-      
-    }
-   
-  }
+  padding: 0px 20px 20px 20px;
 `;
 
 export const ItemImageLogo = styled.div`
@@ -26,41 +15,61 @@ export const ItemImageLogo = styled.div`
   }
 `;
 
-export const ItemTitleProduct = styled.div`
-  .active {
+export const ContentSideBar = styled.div``;
+
+export const TitleAdmin = styled.div`
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  background: rgb(28, 42, 80);
+  padding: 16px;
+  cursor: pointer;
+  color: violet;
+`;
+
+export const TitleText = styled.div`
+  font-size: 18px;
+`;
+
+export const MenuNavigation = styled.div`
+  border-left: 1px solid gray;
+  padding-left: 10px;
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  & > div {
+    padding: 8px;
+    font-size: 18px;
+    color: white;
     font-weight: bold;
-    color: yellow;
+    cursor: pointer;
   }
-  .title-admin {
+  & > .active {
     font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    border-radius: 8px;
-    background: rgb(28, 42, 80);
-    padding: 16px;
-    & > div {
-      color: white;
-      font-size: 18px;
-      /* font-family: "Noto Sans"; */
-    }
+    color: orange;
+    outline: 1px dashed orange;
+    border-radius: 5px;
   }
-  .group-title {
-    border-left: 1px solid white;
-    /* text-align: center; */
-    padding-left: 10px;
-    margin: auto;
-    width: 75%;
-    margin-top: 10px;
-    & > div {
-      font-size: 18px;
-      padding: 20px 0px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    & > .active {
-      font-weight: bold;
-      color: orange;
-    }
+`;
+
+export const Logout = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b50e6;
+  cursor: pointer;
+  margin-top: 40px;
+  border: 1px dashed #4b50e6;
+  height: 40px;
+  border-radius: 5px;
+  font-weight: 600;
+
+  &:hover {
+    border: 1px dashed red;
+    color: red !important;
   }
 `;

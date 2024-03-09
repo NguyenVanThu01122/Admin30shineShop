@@ -1,84 +1,89 @@
-import { Button, Modal } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../../images/logo.png";
-import { ItemImageLogo, ItemTitleProduct, WrapperSideBar } from "./styles";
+import ImageGeneral from "../Ui/image";
+// import imgLogo from '../../images/'
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  ContentSideBar,
+  ItemImageLogo,
+  Logout,
+  MenuNavigation,
+  TitleAdmin,
+  TitleText,
+  WrapperSideBar,
+} from "./styles";
 
-function SideBarProducts() {
+function SideBarProducts({
+  setIsModalLogOut,
+}: {
+  setIsModalLogOut: (value: boolean) => void;
+}) {
   const [isTitle, setIsTitle] = useState(true);
-  const [isModalLogOut, setIsModalLogOut] = useState(false);
+  const [iconToggle, setIconToggle] = useState(false);
+  const pathname = window.location.pathname;
   const navigate = useNavigate();
+
   const handleShowTitle = () => {
     setIsTitle(!isTitle);
+    setIconToggle(!iconToggle);
   };
-  const pathname = window.location.pathname; // lấy param
-
-  // hàm xử lý đăng xuất
-  const handleLogOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    navigate("/login");
-  };
-
   // hàm mở modal đăng xuât
-  const showModalLogOut = () => {
-    setIsModalLogOut(true);
-  };
-  // hàm hủy modal đăng xuất
-  const handleCancelModalLogOut = () => {
-    setIsModalLogOut(false);
-  };
+  const showModalLogOut = () => setIsModalLogOut(true);
+
+  const menuItem = [
+    {
+      path: "/",
+      label: " Quản lý sản phẩm",
+    },
+    {
+      path: "/user-management",
+      label: "Quản lý khách hàng",
+    },
+    {
+      path: "/order-management",
+      label: "  Quản lý đơn hàng",
+    },
+    {
+      path: "/brand-management",
+      label: "  Quản lý thương hiệu",
+    },
+    {
+      path: "/evaluate-lists",
+      label: "Danh sách đánh giá",
+    },
+  ];
+
   return (
     <WrapperSideBar>
       <ItemImageLogo>
-        <img src={Logo} alt="" />
+        <ImageGeneral src={Logo} alt="" />
       </ItemImageLogo>
-      <ItemTitleProduct>
-        <div className="title-admin" onClick={handleShowTitle}>
-          <div>ADMIN 30SHINESHOP</div>
-          <img
-            src="https://next-style-management.dev.apero.vn/static/media/icon-down.ac6f4248e5f1cda247c43a7423db7dc3.svg"
-            alt=""
-          />
-        </div>
+      <ContentSideBar>
+        <TitleAdmin onClick={handleShowTitle}>
+          <TitleText>ADMIN 30SHINESHOP</TitleText>
+          {iconToggle ? (
+            <FontAwesomeIcon icon={faChevronUp} />
+          ) : (
+            <FontAwesomeIcon icon={faChevronDown} />
+          )}
+        </TitleAdmin>
         {isTitle && (
-          <div className="group-title">
-            <div
-              onClick={() => navigate("/")}
-              className={`${pathname === "/" && "active"}`}
-            >
-              Quản lý sản phẩm
-            </div>
-            <div
-              onClick={() => navigate("/user-management")}
-              className={pathname === "/user-management" ? "active" : ""}
-            >
-              Quản lý khách hàng
-            </div>
-            <div
-              onClick={() => navigate("/order-management")}
-              className={pathname === "/order-management" ? "active" : ""}
-            >
-              Quản lý đơn hàng
-            </div>
-            <div
-              onClick={() => navigate("/brand-management")}
-              className={pathname === "/brand-management" ? "active" : ""}
-            >
-              Quản lý thương hiệu
-            </div>
-            <div
-              onClick={() => navigate("/evaluate-lists")}
-              className={pathname === "/evaluate-lists" ? "active" : ""}
-            >
-              Danh sách đánh giá
-            </div>
-          </div>
+          <MenuNavigation>
+            {menuItem.map((item: { path: string; label: string }) => (
+              <div
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`${pathname === item.path && "active"}`}
+              >
+                {item?.label}
+              </div>
+            ))}
+          </MenuNavigation>
         )}
-      </ItemTitleProduct>
-      <div className="logOut" onClick={handleLogOut}>
-        Đăng xuất
-      </div>
+      </ContentSideBar>
+      <Logout onClick={showModalLogOut}>Đăng xuất</Logout>
     </WrapperSideBar>
   );
 }
