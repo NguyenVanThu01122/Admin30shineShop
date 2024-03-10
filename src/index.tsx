@@ -16,6 +16,7 @@ const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
 
+
 const queryClient = new QueryClient();
 root.render(
   //Provider cung cấp reduces store cho các component con, bằng cách bao bọc toàn bộ ứng dụng bên trong Provider và cho phép mọi component trong cây component truy cập đến store.

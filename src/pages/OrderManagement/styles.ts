@@ -1,79 +1,12 @@
-import { Modal, Table } from "antd";
+import { Table } from "antd";
 import { styled } from "styled-components";
+import { CommonModal } from "../../components/Ui/modal";
 
 export const WrapperOrderManagement = styled.div`
   width: calc(100% - 300px);
   height: 100vh;
   background-color: white;
-  /* flex: 1; */
-`;
-
-// css table
-export const ItemTable = styled(Table)`
-  height: 450px;
-  .hover-text {
-    cursor: pointer;
-    text-decoration: underline;
-  }
-  .processing {
-    color: white;
-    padding: 5px;
-    border-radius: 5px;
-    background-color: blue;
-    text-align: center;
-    font-weight: bold;
-  }
-  .confirmed {
-    color: white;
-    background-color: yellowgreen;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
-  }
-  .in_transit {
-    color: white;
-    background-color: orange;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
-  }
-  .delivered {
-    color: white;
-    background-color: green;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
-  }
-  .canceled {
-    color: white;
-    background-color: red;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
-  }
-
-  .timeline-order {
-    text-decoration: underline;
-    cursor: pointer;
-  }
-  .change-order-status {
-    text-decoration: underline;
-    cursor: pointer;
-  }
-  .select-button {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-    .button-update {
-      background-color: orange;
-      font-weight: 600;
-      color: gray;
-    }
-  }
+  padding: 10px;
 `;
 
 // css pagination
@@ -83,31 +16,32 @@ export const ItemPagination = styled.div`
   align-items: center;
   margin-top: 20px;
   padding: 0px 20px;
-  .custom-total-Orders {
-    display: flex;
-    align-items: center;
-    font-style: italic;
-    gap: 15px;
-  }
+`;
+
+export const TotalOrder = styled.div`
+  display: flex;
+  align-items: center;
+  font-style: italic;
+  gap: 15px;
 `;
 
 // css modal timeLine
-export const ItemModalTimeLine = styled(Modal)`
+export const StyledCommonModalTimeLine = styled(CommonModal)`
   width: 35% !important;
-  .custom-timeLine {
-    .processing {
+  .timeLine {
+    .blue-status {
       color: blue;
     }
-    .confirmed {
+    .yellow-status {
       color: yellow;
     }
-    .in_transit {
+    .orange-status {
       color: orange;
     }
-    .delivered {
+    .green-status {
       color: green;
     }
-    .canceled {
+    .red-status {
       color: red;
     }
   }

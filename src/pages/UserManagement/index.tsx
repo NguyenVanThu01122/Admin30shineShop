@@ -1,10 +1,10 @@
 import { Form } from "antd";
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { toast } from "react-toastify";
 import NoDataMessage from "../../components/NoDataMessage";
 import { AppContext } from "../../context";
-import { ERROR_MESSAGES, NO_DATA_MESSAGE } from "../../helper/constants";
+import { ERROR_MESSAGES, NO_DATA_MESSAGE, SORT } from "../../helper/constants";
 import { useSharedStateUtils } from "../../helper/useSharedState";
 import { deleteUser, getListUser } from "../../service/user";
 import ListClient from "./components/ListClient";
@@ -21,8 +21,6 @@ function UserManagement() {
     setLimit,
     keyword,
     setKeyword,
-    sort,
-    setSort,
     totalItem,
     setTotalItem,
     isOpenModal,
@@ -35,9 +33,9 @@ function UserManagement() {
     setIdItem,
   ] = useSharedStateUtils();
   const [form] = Form.useForm();
-
   const queryClient = useQueryClient();
   const appContext = useContext(AppContext); // dùng useContext để truy cập vào context
+  const [sort, setSort] = useState(SORT);
 
   const { isLoading } = useQuery(
     ["getListUser", limit, page, sort, keyword],

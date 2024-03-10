@@ -18,6 +18,7 @@ export const NO_DATA_MESSAGE = {
   NO_BRAND: "Bạn không có thương hiệu nào !",
   NO_PRODUCT_CART: "Bạn không có sản phẩm nào trong giỏ hàng !",
   NO_CUSTOMER: "Bạn không có khách hàng nào !",
+  NO_EVALUATE: "Bạn không có đánh giá nào !",
 };
 
 export const ERROR_MESSAGES = {
@@ -91,6 +92,6 @@ export const PLACEHOLDER = {
 
   SELECT_ORDER_STATUS: "Chọn trạng thái đơn hàng",
   CHOOSE_PAYMENT_METHOD: "Chọn hình thức thanh toán",
-
-  PLAESE_ENTER_NAME_ORDER: "Vui lòng nhập tên đơn hàng",
+  PLEASE_ENTER_NAME_EVALUATE: "Vui lòng nhập tên đánh giá",
+  PLEASE_ENTER_NAME_CUSTOMER: "Vui lòng nhập tên khách hàng",
 };

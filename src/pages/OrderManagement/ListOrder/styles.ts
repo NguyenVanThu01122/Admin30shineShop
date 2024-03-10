@@ -1,24 +1,28 @@
 import { styled } from "styled-components";
 import { TableGeneral } from "../../../components/Ui/table";
+import { CommonModal } from "../../../components/Ui/modal";
 
 export const WrapperOrders = styled.div`
-  height: 90vh;
-  background-color: rgb(247, 247, 247);
+  height: 88vh;
   border-radius: 8px;
-  padding: 15px;
-  border: 1px solid red;
+  padding: 10px;
 `;
 
 export const TitlePage = styled.div`
   font-weight: bold;
   font-size: 25px;
-  padding: 30px 20px;
+  padding: 20px 0px 15px 20px;
 `;
 
-export const FilterSection = styled.div``;
+export const FilterSection = styled.div`
+  background-color: rgb(247, 247, 247);
+  padding: 10px;
+  border-radius: 5px;
+`;
 
 export const DateFilter = styled.div`
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 15px;
 `;
@@ -30,6 +34,7 @@ export const ListOrderTitle = styled.div`
 
 export const ItemDatePicker = styled.div`
   display: flex;
+  align-items: center;
   gap: 10px;
 `;
 
@@ -38,16 +43,17 @@ export const GroupSelect = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  .form-item {
-    .input-keyword {
-      width: 280px;
-    }
+  .input-keyword,
+  .select-payment,
+  .select-status {
+    width: 380px;
   }
 `;
 
 export const StyledTableGeneral = styled(TableGeneral)`
-  height: 450px;
-  overflow-y: auto !important;
+  height: 420px;
+  width: 100%;
+  overflow: auto !important;
   &::-webkit-scrollbar-thumb {
     border-radius: 5px !important;
   }
@@ -61,6 +67,13 @@ export const StyledTableGeneral = styled(TableGeneral)`
     &::-webkit-scrollbar-thumb {
       background: linear-gradient(217deg, #e250e5, #4b50e6) !important;
     }
+  }
+  .email {
+    width: 100px;
+  }
+  .totalPrice {
+    color: red;
+    font-weight: bold;
   }
   .hover-text {
     cursor: pointer;
@@ -124,5 +137,26 @@ export const StyledTableGeneral = styled(TableGeneral)`
       font-weight: 600;
       color: gray;
     }
+  }
+`;
+
+export const StyledModalStatusPanel = styled(CommonModal)`
+  .ant-modal-content {
+  }
+`;
+export const ContainerUpdate = styled.div`
+  .select-status {
+    width: 80%;
+  }
+`;
+export const SelectBtn = styled.div`
+  display: flex;
+  gap: 6px;
+  justify-content: end;
+  margin-top: 10px;
+  .button-update {
+    background-color: orange;
+    font-weight: 600;
+    color: gray;
   }
 `;

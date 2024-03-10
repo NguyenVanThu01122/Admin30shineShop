@@ -1,15 +1,6 @@
 import { Dayjs } from "dayjs";
 import { OrderStatus } from "../../../service/order";
 
-export interface OrderStatusPanelProps {
-  isOpenStatusOrder: boolean;
-  cancelStatusOrder: () => void;
-  openStatusOrder: () => void;
-  setUpdateStatus: (value: any) => void;
-  handleUpdateStatusOrder: (record: any) => void;
-  record: TypeOrders;
-}
-
 export interface ListOrderProps {
   page: number;
   limit: number;

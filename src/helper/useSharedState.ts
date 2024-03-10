@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { LIMIT, PAGE, SORT, TOTAL } from "./constants";
+import { LIMIT, PAGE, TOTAL } from "./constants";
 
 export const useSharedStateUtils = () => {
   const [limit, setLimit] = useState<any>(LIMIT);
   const [page, setPage] = useState(PAGE);
-  const [sort, setSort] = useState(SORT);
+  // const [sort, setSort] = useState(SORT);
   const [totalItem, setTotalItem] = useState(TOTAL);
   const [keyword, setKeyword] = useState("");
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -19,8 +19,8 @@ export const useSharedStateUtils = () => {
     setLimit,
     keyword,
     setKeyword,
-    sort,
-    setSort,
+    // sort,
+    // setSort,
     totalItem,
     setTotalItem,
     isOpenModal,

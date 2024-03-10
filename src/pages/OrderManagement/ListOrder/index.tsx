@@ -2,6 +2,7 @@ import { DatePicker } from "antd";
 import { useContext, useState } from "react";
 import { useQueryClient } from "react-query";
 import { toast } from "react-toastify";
+import { ButtonGeneral } from "../../../components/Ui/button";
 import { InputGeneral } from "../../../components/Ui/input";
 import { SelectGeneral } from "../../../components/Ui/select";
 import { AppContext } from "../../../context";
@@ -12,18 +13,25 @@ import {
   selectSort,
   selectStatus,
 } from "../../../helper/formOptions";
+import { formatCurrency } from "../../../helper/formatCurrency";
 import { formatDateFromISO } from "../../../helper/handleFormatDate";
 import { OrderStatusUtils } from "../../../helper/orderStatusUtils";
 import { useSearchKeywordUltis } from "../../../helper/useSearchKeyword";
-import { getTimeLine, updateStatusOrder } from "../../../service/order";
-import OrderStatusPanel from "./OrderStatusControlPanel";
+import {
+  OrderStatus,
+  getTimeLine,
+  updateStatusOrder,
+} from "../../../service/order";
 import PopoverProductInfo from "./PopoverProductInfo";
 import {
+  ContainerUpdate,
   DateFilter,
   FilterSection,
   GroupSelect,
   ItemDatePicker,
   ListOrderTitle,
+  SelectBtn,
+  StyledModalStatusPanel,
   StyledTableGeneral,
   TitlePage,
   WrapperOrders,
@@ -45,12 +53,14 @@ export default function ListOrder({
   setOrderStatus,
   setIsOpenModal,
 }: ListOrderProps) {
-  const appContext = useContext(AppContext);
-  const { arrOrderStatus, colorStatus } = OrderStatusUtils();
-  const [updateStatus, setUpdateStatus] = useState("");
   const queryClient = useQueryClient();
-  const [isOpenStatusOrder, setIsOpenStatusOrder] = useState<boolean>(false);
+  const appContext = useContext(AppContext);
+  const { arrOrderStatus, classNameStatus } = OrderStatusUtils();
   const { handleChangeKeyword } = useSearchKeywordUltis(setPage, setKeyword);
+  const [updateStatus, setUpdateStatus] = useState("");
+  const [isOpenStatusOrder, setIsOpenStatusOrder] = useState<boolean>(false);
+  const [saveIdUpdate, setSaveIdUpdate] = useState<TypeOrders>();
+  const [selectedValue, setSelectedValue] = useState<any>();
 
   // hàm lấy mốc thời gian đơn hàng
   const handleGetTimeline = (record: TypeOrders) => {
@@ -63,35 +73,39 @@ export default function ListOrder({
   };
 
   // hàm cập nhật trạng thái đơn hàng
-  const handleUpdateStatusOrder = (record: TypeOrders) => {
+  const handleUpdateStatusOrder = () => {
     const orderStatus = {
       orderStatus: updateStatus,
     };
-    updateStatusOrder(record?.orderId, orderStatus)
-      .then((res) => {
-        toast.success(res.data?.message);
-        queryClient.refetchQueries(["getListOrder"]);
-        setIsOpenStatusOrder(false);
-      })
-      .catch((error) => {
-        toast.error(error.response?.data?.message);
-      });
+    if (saveIdUpdate?.orderId && orderStatus) {
+      updateStatusOrder(saveIdUpdate?.orderId, orderStatus)
+        .then((res) => {
+          queryClient.refetchQueries(["getListOrder"]);
+          setIsOpenStatusOrder(false);
+          setSelectedValue(null);
+          toast.success(res.data?.message);
+        })
+        .catch((error) => toast.error(error.response?.data?.message));
+    }
   };
 
   // xử lý chọn trạng thái đơn hàng
-  const handleSelectStatusOrder = (value: any) => {
+  const handleSelectStatusOrder = (value: OrderStatus) => {
     setOrderStatus(value);
     setPage(1);
   };
-
-  // hàm hủy thay đổi trạng thái đơn hàng
-  const cancelStatusOrder = () => setIsOpenStatusOrder(false);
 
   // hàm thay đổi trạng thái đơn hàng
   const openStatusOrder = () => setIsOpenStatusOrder(true);
 
   // hàm mở modal TimeLine
   const showModalTimeline = () => setIsOpenModal(true);
+
+  // hàm hủy thay đổi trạng thái đơn hàng
+  const cancelStatusOrder = () => {
+    setIsOpenStatusOrder(false);
+    setSelectedValue(null);
+  };
 
   // xử lý columns table
   const columns: TypeColumns[] = [
@@ -106,13 +120,13 @@ export default function ListOrder({
       title: "Tên khách hàng",
       dataIndex: "userInfo",
       key: "userInfo",
-      render: (value) => <div>{value?.name}</div>,
+      render: (value) => <div className="name">{value?.name}</div>,
     },
     {
-      title: "Emali",
+      title: "Email",
       dataIndex: "userInfo",
       key: "userInfo",
-      render: (value) => <div>{value?.email}</div>,
+      render: (value) => <div className="email">{value?.email}</div>,
     },
     {
       title: "Các sản phẩm đã đặt mua",
@@ -124,15 +138,17 @@ export default function ListOrder({
       title: "Tổng tiền phải trả",
       dataIndex: "totalPrice",
       key: "totalPrice",
-      render: (value) => <div className="totalPrice">{value} VND</div>,
+      render: (value) => (
+        <div className="totalPrice">{formatCurrency(value)} VND</div>
+      ),
     },
     {
       title: "Trạng thái đơn hàng",
       dataIndex: "orderStatus",
       key: "orderStatus",
-      width: "145px",
+      width: "140px",
       render: (value) => (
-        <div className={colorStatus(value)}>{arrOrderStatus(value)}</div>
+        <div className={classNameStatus(value)}>{arrOrderStatus(value)}</div>
       ),
     },
     {
@@ -170,14 +186,15 @@ export default function ListOrder({
       dataIndex: "",
       key: "",
       render: (value, record) => (
-        <OrderStatusPanel
-          record={record}
-          openStatusOrder={openStatusOrder}
-          cancelStatusOrder={cancelStatusOrder}
-          isOpenStatusOrder={isOpenStatusOrder}
-          setUpdateStatus={setUpdateStatus}
-          handleUpdateStatusOrder={handleUpdateStatusOrder}
-        />
+        <div
+          className="change-order-status"
+          onClick={() => {
+            setSaveIdUpdate(record);
+            openStatusOrder();
+          }}
+        >
+          Thay đổi trạng thái đơn hàng
+        </div>
       ),
     },
   ];
@@ -205,7 +222,7 @@ export default function ListOrder({
           <InputGeneral
             className="input-keyword"
             size="large"
-            placeholder={PLACEHOLDER.PLAESE_ENTER_NAME_ORDER}
+            placeholder={PLACEHOLDER.PLEASE_ENTER_NAME_CUSTOMER}
             onChange={handleChangeKeyword}
           />
           <SelectGeneral
@@ -237,10 +254,44 @@ export default function ListOrder({
         loading={isLoading}
         columns={columns}
         dataSource={appContext?.saveListOrder}
-        scroll={{ y: 330 }}
         pagination={false}
         size="middle"
       />
+
+      <StyledModalStatusPanel
+        width={400}
+        footer
+        open={isOpenStatusOrder}
+        onCancel={cancelStatusOrder}
+      >
+        <ContainerUpdate>
+          <SelectGeneral
+            value={selectedValue}
+            className="select-status"
+            placeholder={PLACEHOLDER.SELECT_ORDER_STATUS}
+            options={selectStatus}
+            onChange={(value) => {
+              setUpdateStatus(value);
+              setSelectedValue(value);
+            }}
+          />
+          <SelectBtn>
+            <ButtonGeneral
+              className="button-update"
+              onClick={handleUpdateStatusOrder}
+              disabled={!selectedValue}
+            >
+              Cập nhật
+            </ButtonGeneral>
+            <ButtonGeneral
+              className="button-cancel"
+              onClick={cancelStatusOrder}
+            >
+              Hủy
+            </ButtonGeneral>
+          </SelectBtn>
+        </ContainerUpdate>
+      </StyledModalStatusPanel>
     </WrapperOrders>
   );
 }

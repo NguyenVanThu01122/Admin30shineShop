@@ -9,6 +9,8 @@ type AppContextType = {
   setSaveBrands: any;
   saveListOrder: any;
   setListOrder: any;
+  saveListEvaluate:any
+  setListEvaluate:any
 };
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -19,6 +21,7 @@ const AppProvider = ({ children }: any) => {
   const [saveProducts, setSaveProducts] = useState([]);
   const [saveBrands, setSaveBrands] = useState([]);
   const [saveListOrder, setListOrder] = useState([]);
+  const [saveListEvaluate, setListEvaluate] = useState([]);
 
   return (
     <AppContext.Provider
@@ -31,6 +34,8 @@ const AppProvider = ({ children }: any) => {
         setSaveBrands,
         saveListOrder,
         setListOrder,
+        saveListEvaluate,
+        setListEvaluate,
       }}
     >
       {children}

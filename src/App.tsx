@@ -7,7 +7,6 @@ import OrderManagement from "./pages/OrderManagement";
 import ProductManagement from "./pages/ProductManagement";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/login";
-
 function App() {
   return (
     <BrowserRouter>

@@ -1,38 +1,92 @@
-import { Input, Pagination, Select, message } from "antd";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useContext } from "react";
+import { useQuery } from "react-query";
 import { useNavigate } from "react-router-dom";
-import { saveListEvaluate } from "../../redux/actions/productManagenment";
-import { privateAxios } from "../../service/axios";
-import { ItemPagination, ItemTable, WrapperEvaluateList } from "./styles";
-
-const selectLimits = [
-  { value: 5, label: 5 },
-  { value: 10, label: 10 },
-  { value: 15, label: 15 },
-  { value: 20, label: 20 },
-  { value: 25, label: 25 },
-];
+import { toast } from "react-toastify";
+import NoDataMessage from "../../components/NoDataMessage";
+import { InputGeneral } from "../../components/Ui/input";
+import PaginationGeneral from "../../components/Ui/pagination";
+import { SelectGeneral } from "../../components/Ui/select";
+import { AppContext } from "../../context";
+import {
+  calculateIndices,
+  calculateRowNumber,
+} from "../../helper/calculateIndices";
+import { NO_DATA_MESSAGE, PLACEHOLDER } from "../../helper/constants";
+import { optionsLimit } from "../../helper/formOptions";
+import { useSearchKeywordUltis } from "../../helper/useSearchKeyword";
+import { useSharedStateUtils } from "../../helper/useSharedState";
+import { getListEvaluate } from "../../service/listEvaluate";
+import { TypeColumns } from "../OrderManagement/ListOrder/types";
+import {
+  ItemPagination,
+  SearchEvaluate,
+  StyledTable,
+  TitlePage,
+  TotalEvaluate,
+  WrapperEvaluateList,
+} from "./styles";
 
 export function EvaluateLists() {
-  const [keyword, setKeyword] = useState("");
-  const [limit, setLimit] = useState(10);
-  const [page, setPage] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
-
-  const dispatch = useDispatch();
+  const [
+    page,
+    setPage,
+    limit,
+    setLimit,
+    keyword,
+    setKeyword,
+    totalItem,
+    seTotalItem,
+  ] = useSharedStateUtils();
   const navigate = useNavigate();
-  const evaluates = useSelector((state: any) => state?.app?.listEvaluate);
+  const { handleChangeKeyword } = useSearchKeywordUltis(setPage, setKeyword);
+  const { startIndex, endIndex } = calculateIndices(page, limit, totalItem);
+  const appContext = useContext(AppContext);
 
-  // xử lý colunms của table
-  const colunms = [
+  const params = {
+    page,
+    limit,
+    keyword,
+  };
+  const { isLoading } = useQuery(
+    ["GetListEvaluate", page, limit, keyword],
+    () => getListEvaluate(params),
+    {
+      onSuccess: (data) => {
+        seTotalItem(data.data?.totalProducts);
+        appContext?.setListEvaluate(data.data.data);
+      },
+      onError: (error: any) => toast.error(error.response.data?.message),
+    }
+  );
+
+  // hàm render columns star
+  const generateStarColumns = (numStars: number) => {
+    const columns = [];
+    for (let i = 1; i <= numStars; i++) {
+      columns.push({
+        title: `${i} sao`,
+        dataIndex: `star${i}`,
+        key: `star${i}`,
+      });
+    }
+    return columns;
+  };
+  const starColumns = generateStarColumns(5); // Tạo danh sách cột từ 1 sao đến 5 sao
+
+  const handChangeSelectLimit = (value: number) => {
+    setLimit(value);
+    setPage(1);
+  };
+
+  // xử lý columns của table
+  const columns: TypeColumns[] = [
     {
       title: "STT",
       dataIndex: "productId",
       key: "productId",
       width: "100px",
-      render: (value: String, record: any, index: number) => {
-        return <div>{(page - 1) * limit + 1 + index}</div>;
+      render: (value, record, index) => {
+        return <div>{calculateRowNumber(page, limit, index)}</div>;
       },
     },
     {
@@ -40,16 +94,14 @@ export function EvaluateLists() {
       dataIndex: "productName",
       key: "productName",
       width: "200px",
-      render: (value: string, record: any) => {
-        return (
-          <div
-            className="name-product"
-            onClick={() => navigate(`/evaluate-detail/${record?.productId}`)}
-          >
-            {value}
-          </div>
-        );
-      },
+      render: (value, record) => (
+        <div
+          className="name-product"
+          onClick={() => navigate(`/evaluate-detail/${record?.productId}`)}
+        >
+          {value}
+        </div>
+      ),
     },
     {
       title: "Tổng số đánh giá",
@@ -62,88 +114,55 @@ export function EvaluateLists() {
       dataIndex: "averageStars",
       key: "averageStars",
       width: "200px",
-      render: (value: number) => {
+      render: (value) => {
         return <div>{Math.ceil(value)}</div>; // math.ceil làm tròn lên
       },
     },
-    { title: "1 sao", dataIndex: "star1", key: "star1" },
-    { title: "2 sao", dataIndex: "star2", key: "star2" },
-    { title: "3 sao", dataIndex: "star3", key: "star3" },
-    { title: "4 sao", dataIndex: "star4", key: "star4" },
-    { title: "5 sao", dataIndex: "star5", key: "star5" },
+    ...starColumns, // Sử dụng spread operator để nối mảng `starColumns` vào mảng `columns`
   ];
 
-  // hàm lấy danh sách đánh giá
-  const handleGetListEvaluate = () => {
-    const params = {
-      keyword,
-      page,
-      limit,
-    };
-    privateAxios
-      .get("/admin/evaluate/", {
-        params,
-      })
-      .then((res) => {
-        dispatch(saveListEvaluate(res.data?.data));
-        setTotalProducts(res.data?.totalProducts);
-      })
-      .catch((error) => {
-        message.error(error.response.data?.message);
-      });
-  };
-
-  const handleChangeKeyword = (e: any) => {
-    setKeyword(e.target.value);
-    setPage(1);
-  };
-
-  const handChangeSelectLimit = (value: any) => {
-    setLimit(value);
-    setPage(1);
-  };
-
-  useEffect(() => {
-    handleGetListEvaluate();
-  }, [limit, page, keyword]);
   return (
     <WrapperEvaluateList>
-      <div className="list-evaluate">
-        <div>DANH SÁCH ĐÁNH GIÁ</div>
-        <Input
+      <TitlePage>DANH SÁCH ĐÁNH GIÁ</TitlePage>
+      <SearchEvaluate>
+        <InputGeneral
+          size="large"
           className="input-keyword"
           onChange={handleChangeKeyword}
-          size="large"
-          placeholder="Vui lòng nhập tên"
-        ></Input>
-      </div>
+          placeholder={PLACEHOLDER.PLEASE_ENTER_NAME_EVALUATE}
+        />
+      </SearchEvaluate>
 
-      <ItemTable
-        columns={colunms}
-        dataSource={evaluates}
-        scroll={{ y: 400 }}
+      {/* table Evaluate */}
+      <StyledTable
+        loading={isLoading}
+        columns={columns}
+        dataSource={appContext?.saveListEvaluate}
         pagination={false}
-      ></ItemTable>
+      />
 
-      <ItemPagination>
-        <Pagination
-          current={page}
-          pageSize={limit}
-          total={totalProducts}
-          onChange={(page) => setPage(page)}
-        ></Pagination>
-        <div className="display-total-evaluate">
-          Hiển thị từ sản phẩm thứ {(page - 1) * limit + 1} đến{" "}
-          {page * limit > totalProducts ? totalProducts : page * limit} trên
-          tổng {totalProducts} thương hiệu{" "}
-          <Select
-            defaultValue={limit}
-            options={selectLimits}
-            onChange={handChangeSelectLimit}
-          />{" "}
-          trên 1 trang.
-        </div>
-      </ItemPagination>
+      {!appContext?.saveListEvaluate.length && !isLoading ? (
+        <NoDataMessage message={NO_DATA_MESSAGE.NO_EVALUATE} />
+      ) : (
+        <ItemPagination>
+          <PaginationGeneral
+            current={page}
+            pageSize={limit}
+            total={totalItem}
+            onChange={(page) => setPage(page)}
+          />
+          <TotalEvaluate>
+            Hiển thị từ sản phẩm thứ {startIndex} đến {endIndex} trên tổng
+            {totalItem} thương hiệu
+            <SelectGeneral
+              defaultValue={limit}
+              options={optionsLimit}
+              onChange={handChangeSelectLimit}
+            />
+            trên 1 trang.
+          </TotalEvaluate>
+        </ItemPagination>
+      )}
     </WrapperEvaluateList>
   );
 }

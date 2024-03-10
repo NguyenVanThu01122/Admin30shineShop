@@ -106,7 +106,7 @@ export function BrandManagement() {
           setListBrandId={setListBrandId}
         />
       )}
-      {/* item modal */}
+      {/* item modal brand */}
       <ModalBrand
         form={form}
         idBrand={idItem}

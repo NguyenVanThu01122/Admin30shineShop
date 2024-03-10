@@ -1,4 +1,4 @@
-enum OrderStatus {
+export enum OrderStatus {
   Processing = "processing",
   Confirmed = "confirmed",
   InTransit = "in_transit",
@@ -26,7 +26,7 @@ export const OrderStatusUtils = () => {
   };
 
   // hàm xử lý màu sắc trạng thái đơn hàng
-  const colorStatus = (status: OrderStatus) => {
+  const classNameStatus = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.Processing:
         return "blue-status";
@@ -43,5 +43,22 @@ export const OrderStatusUtils = () => {
     }
   };
 
-  return { arrOrderStatus, colorStatus };
+  const colorStatus = (status: OrderStatus) => {
+    switch (status) {
+      case OrderStatus.Processing:
+        return "blue";
+      case OrderStatus.Confirmed:
+        return "yellow";
+      case OrderStatus.InTransit:
+        return "orange";
+      case OrderStatus.Delivered:
+        return "green-";
+      case OrderStatus.Canceled:
+        return "red";
+      default:
+        return "";
+    }
+  };
+
+  return { arrOrderStatus, classNameStatus, colorStatus };
 };

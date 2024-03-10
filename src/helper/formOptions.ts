@@ -1,6 +1,5 @@
 // xử lý các option của thẻ select
 
-
 export const optionForm = [
   { value: "Dầu gội đầu", lable: "Dầu gội đầu" },
   { value: "Sữa tắm", lable: "Sữa tắm" },
@@ -32,8 +31,8 @@ export const optionsLimit = [
 
 // chọn selectSort theo tiền
 export const selectSort = [
-  { value: 0, label: "Sắp xếp theo tổng tiền mua giảm dần" },
   { value: -1, label: "Sắp xếp theo tổng tiền mua mặc định" },
+  { value: 0, label: "Sắp xếp theo tổng tiền mua giảm dần" },
   { value: 1, label: "Sắp xếp theo tổng tiền mua tăng dần" },
 ];
 // chọn hình thức thanh toán
@@ -49,4 +48,3 @@ export const selectStatus = [
   { value: "delivered", label: "Đã giao hàng" },
   { value: "canceled", label: "Đã hủy" },
 ];
-
