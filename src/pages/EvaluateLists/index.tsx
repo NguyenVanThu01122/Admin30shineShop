@@ -85,15 +85,13 @@ export function EvaluateLists() {
       dataIndex: "productId",
       key: "productId",
       width: "100px",
-      render: (value, record, index) => {
-        return <div>{calculateRowNumber(page, limit, index)}</div>;
-      },
+      render: (value, record, index) => calculateRowNumber(page, limit, index),
     },
     {
       title: "Tên sản phẩm",
       dataIndex: "productName",
       key: "productName",
-      width: "200px",
+      width: "300px",
       render: (value, record) => (
         <div
           className="name-product"
@@ -114,9 +112,7 @@ export function EvaluateLists() {
       dataIndex: "averageStars",
       key: "averageStars",
       width: "200px",
-      render: (value) => {
-        return <div>{Math.ceil(value)}</div>; // math.ceil làm tròn lên
-      },
+      render: (value) => Math.ceil(value), // math.ceil làm tròn lên
     },
     ...starColumns, // Sử dụng spread operator để nối mảng `starColumns` vào mảng `columns`
   ];

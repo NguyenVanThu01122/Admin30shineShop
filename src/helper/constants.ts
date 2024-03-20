@@ -38,6 +38,9 @@ export const STRING = {
   CONFIRM_DELETE_ONE: " Bạn có chắc chắn muốn xóa 1 thương hiệu này không ?",
   CONFIRM_DELETE_All:
     "Bạn có chắc chắn muốn xóa tất cả thương hiệu này không ?",
+
+  CONFIRM_AllOW_VISIBLE: "Bạn có chắc chắn muốn cho phép xuất hiện không ?",
+  CONFIRM_DELETE_EVALUATE: "Bạn có chắc chắn muốn xóa đánh giá này không ?",
 };
 
 export const LABEL = {
@@ -94,4 +97,6 @@ export const PLACEHOLDER = {
   CHOOSE_PAYMENT_METHOD: "Chọn hình thức thanh toán",
   PLEASE_ENTER_NAME_EVALUATE: "Vui lòng nhập tên đánh giá",
   PLEASE_ENTER_NAME_CUSTOMER: "Vui lòng nhập tên khách hàng",
+  ARRANGE_TIME_BY_NUMBER_OF_STARS: "Sắp xếp thời gian theo số sao",
+  SORT_REVIEWS_BY_REVIEW_TIME: "Sắp xếp đánh giá theo thời gian đánh giá",
 };

@@ -142,8 +142,10 @@ export const validateSalePrice = [
     validator(_: any, value: any) {
       if (value === "") {
         return Promise.resolve();
-      } else if (Number(value) < 1) {
-        return Promise.reject(new Error("Vui lòng nhập giá sale lớn hơn 0."));
+      } else if (Number(value) < 0) {
+        return Promise.reject(
+          new Error("Vui lòng nhập giá sale lớn hơn hoặc bằng 0.")
+        );
       } else if (Number(getFieldValue("originPrice")) < Number(value)) {
         return Promise.reject(
           new Error("Vui lòng nhập giá sale nhỏ hơn hoặc bằng giá gốc")

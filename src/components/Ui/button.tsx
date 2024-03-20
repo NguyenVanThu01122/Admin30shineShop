@@ -18,7 +18,14 @@ export const ButtonGeneral = ({
   className?: string;
   htmlType?: "button" | "submit" | "reset";
   size?: "large" | "middle" | "small";
-  type?: "default" | "primary" | "ghost" | "dashed" | "link" | "text";
+  type?:
+    | "default"
+    | "primary"
+    | "ghost"
+    | "dashed"
+    | "link"
+    | "text"
+    | "danger";
   span?: any;
   style?: CSSProperties;
   disabled?: boolean;

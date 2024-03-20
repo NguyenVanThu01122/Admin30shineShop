@@ -183,6 +183,7 @@ export default function ModalProduct({
           className="formItem"
           label={LABEL.ORIGIN_PRICE}
           name="originPrice"
+          dependencies={["salePrice"]} // Xác định phụ thuộc vào trường "salePrice"
           rules={validateOriginPrice}
         >
           <InputGeneral

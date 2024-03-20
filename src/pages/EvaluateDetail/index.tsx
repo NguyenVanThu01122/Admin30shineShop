@@ -1,243 +1,279 @@
-import { Pagination, Select, message } from "antd";
-import moment from "moment";
-import { useEffect, useState } from "react";
+import { Pagination } from "antd";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { useParams } from "react-router-dom";
-import iconDelete from "../../images/icon-delete.svg";
-import imgDelete from "../../images/img-delete.jpg";
-import { privateAxios } from "../../service/axios";
+import { toast } from "react-toastify";
+import ConfirmationDialog from "../../components/ConfirmationDialog";
+import { ButtonGeneral } from "../../components/Ui/button";
+import { SelectGeneral } from "../../components/Ui/select";
+import { calculateIndices } from "../../helper/calculateIndices";
+import { LIMIT, PAGE, PLACEHOLDER, STRING } from "../../helper/constants";
 import {
-  ItemDetailEvaluate,
+  optionsLimit,
+  selectSortNumberStar,
+  selectSortTimeEvaluate,
+} from "../../helper/formOptions";
+import { formatDateFromISO } from "../../helper/handleFormatDate";
+import {
+  UpdateAllowVisible,
+  deleteDetailEvaluate,
+  getDetailEvaluate,
+} from "../../service/detailEvaluate";
+import { TypeColumn } from "../ProductManagement/components/TableProduct/type";
+import {
+  ContainerEvaluate,
+  FilterSelect,
   ItemPagination,
-  ModalAllowVisible,
-  ModalDelete,
+  StyledModalAllowVisible,
+  StyledModalDelete,
+  StyledTableGeneral,
+  TitlePage,
+  TotalEvaluate,
   WrapperEvaluateDetail,
 } from "./styles";
-
-const selectSortNumberStar = [
-  { value: 0, label: "Mặc định" },
-  { value: -1, label: "Giảm dần" },
-  { value: 1, label: "Tăng dần" },
-];
-const selectSortTimeEvaluate = [
-  { value: 0, label: "Mặc định" },
-  { value: -1, label: "Giảm dần" },
-  { value: 1, label: "Tăng dần" },
-];
-const selectLimits = [
-  { value: 5, label: 5 },
-  { value: 10, label: 10 },
-  { value: 15, label: 15 },
-  { value: 20, label: 20 },
-  { value: 25, label: 25 },
-];
-
+interface EvaluateType {
+  allowVisible: true;
+  comment: string;
+  evaluateId: string;
+  star: number;
+  time: string;
+  user: string;
+}
 export function EvaluateDetail() {
+  const [page, setPage] = useState(PAGE);
+  const [limit, setLimit] = useState(LIMIT);
   const [sortDate, setSortDate] = useState("");
-  const [sortStar, setSortStar] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
-
-  const [listEvaluate, setlistEvaluate] = useState<any>([]);
-  const [totalEvaluates, setTotalEvaluates] = useState(0);
-  const [isOpenModal, setIsOpenModal] = useState(false);
-  const [listOrderId, setListOrderId] = useState<any>([]);
   const [idEvaluate, setIdEvaluate] = useState("");
-  const [isAllowVisivle, setIsAllowVisivle] = useState(false);
-  const [allowVisible, setAllowVistble] = useState(false);
+  const [sortStar, setSortStar] = useState("");
 
+  const [listEvaluate, setListEvaluate] = useState<EvaluateType[]>();
+  const [isOpenModalDelete, setIsOpenModalDelete] = useState(false);
+  const [showModalAllowVisible, setShowModalAllowVisible] = useState(false);
+  const [isAllowVisible, setIsAllowVisible] = useState(false);
+  const queryClient = useQueryClient();
   const params = useParams();
+  const { startIndex, endIndex } = calculateIndices(
+    page,
+    limit,
+    listEvaluate?.length ?? 0
+  );
 
-  // hàm lấy chi tiết đánh giá
-  const handleGetDetailEvaluate = () => {
-    const objParams = {
-      page,
-      limit,
-      sortDate,
-      sortStar,
-    };
-    privateAxios
-      .get(`/admin/evaluate/${params?.id}`, {
-        params: objParams,
-      })
-      .then((res) => {
-        setlistEvaluate(res.data?.data);
-        setIdEvaluate(res.data?.data?.evaluateId);
-        console.log(res.data?.data?.user);
-        setTotalEvaluates(res.data?.totalEvaluates);
-      })
-      .catch((error) => {
-        message.error(error.response.data?.message);
-      });
+  const objParams = {
+    page,
+    limit,
+    sortDate,
+    sortStar,
   };
+  // hàm lấy chi tiết đánh giá
+  const { isLoading } = useQuery(
+    ["GetDetailEvaluate", limit, page, sortDate, sortStar],
+    () => getDetailEvaluate(params?.id ?? "", objParams),
+    {
+      onSuccess: (data) => {
+        setListEvaluate(data.data?.data);
+      },
+      onError: (error: any) => toast.error(error.response.data?.message),
+    }
+  );
+
+  const mutationUpdate = useMutation(
+    (objAllowVisible: { allowVisible: boolean }) =>
+      UpdateAllowVisible(idEvaluate, objAllowVisible),
+    {
+      onSuccess: (res) => {
+        toast.success(res.data?.message);
+        handleCancelAllowVisible();
+        queryClient.invalidateQueries("GetDetailEvaluate");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message);
+        handleCancelAllowVisible();
+      },
+    }
+  );
 
   // hàm xử lý cập nhật xuất hiện đánh giá
   const handleUpdateAllowVisible = () => {
     const objAllowVisible = {
-      allowVisible: allowVisible ? false : true,
+      allowVisible: isAllowVisible,
     };
-    privateAxios
-      .put(`/admin/evaluate/allow-visible/${params?.id}`, objAllowVisible)
-      .then((res) => {
-        message.success(res.data?.message);
-        handleCanceAllowVisible();
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
+    mutationUpdate.mutate(objAllowVisible);
   };
 
   // hàm mở modal cho phép đánh giá xuất hiện
-  const showModalUdateAllowVisible = (allowVisible: boolean) => {
-    setIsAllowVisivle(true);
-    setAllowVistble(allowVisible);
+  const showModalUpdateAllowVisible = (evaluateId: string) => {
+    setIdEvaluate(evaluateId);
+    setShowModalAllowVisible(true);
   };
+
   // hàm hủy modal cho phép xuất hiện đánh giá
-  const handleCanceAllowVisible = () => {
-    setIsAllowVisivle(false);
-  };
+  const handleCancelAllowVisible = () => setShowModalAllowVisible(false);
 
   // hàm xóa đánh gía
-  const handleDeleteEvaluate = () => {
-    privateAxios
-      .delete(`/admin/evaluate/${listOrderId?.evaluateId}`)
-      .then((res) => {
-        message.success(res.data?.message);
+  const mutationDeleteEvaluate = useMutation(
+    "Delete-evaluate",
+    () => deleteDetailEvaluate(idEvaluate),
+    {
+      onSuccess(data, variables, context) {
+        toast.success(data.data?.message);
         handleCancelModalDelete();
-        handleGetDetailEvaluate();
-      })
-      .catch((error) => {
-        message.error(error.response?.data?.message);
-      });
+        queryClient.invalidateQueries("GetDetailEvaluate");
+      },
+      onError: (error: any) => {
+        handleCancelModalDelete();
+        toast.error(error.response?.data?.message);
+      },
+    }
+  );
+  const handleDeleteEvaluate = () => {
+    mutationDeleteEvaluate.mutate();
   };
 
-  const showModalDelete = () => {
-    setIsOpenModal(true);
+  const showModalDelete = (evaluateId: string) => {
+    setIdEvaluate(evaluateId);
+    setIsOpenModalDelete(true);
   };
-  const handleCancelModalDelete = () => {
-    setIsOpenModal(false);
-  };
+
+  const handleCancelModalDelete = () => setIsOpenModalDelete(false);
+
+  const handleChangePage = (page: number) => setPage(page);
 
   const handChangeSelectLimit = (value: number) => {
     setLimit(value);
     setPage(1);
   };
 
-  const handleChangePage = (page: number) => {
-    setPage(page);
-  };
-
-  useEffect(() => {
-    handleGetDetailEvaluate();
-  }, [limit, page, sortDate, sortStar]);
+  // Các cột trong bảng
+  const columns: TypeColumn[] = [
+    {
+      title: "Tên người dùng",
+      dataIndex: "user",
+      key: "user",
+    },
+    {
+      title: "Đánh giá",
+      dataIndex: "comment",
+      key: "comment",
+    },
+    {
+      title: "Số sao",
+      dataIndex: "star",
+      key: "star",
+    },
+    {
+      title: "Thời gian đánh giá",
+      dataIndex: "time.createdAt",
+      key: "time.createdAt",
+      render: (value, record, index) => <div>{formatDateFromISO(value)}</div>,
+    },
+    {
+      title: "Sự xuất hiện",
+      dataIndex: "allowVisible",
+      key: "allowVisible",
+      render: (value, record) => (
+        <div>{record.allowVisible ? "Có cho phép" : "Không cho phép"}</div>
+      ),
+    },
+    {
+      title: "Cập nhật sự xuất hiện",
+      dataIndex: "allowVisible",
+      key: "allowVisibleAction",
+      render: (value, record) => (
+        <ButtonGeneral
+          type="primary"
+          onClick={() => {
+            if (record.allowVisible) {
+              setIsAllowVisible(false);
+            } else {
+              setIsAllowVisible(true);
+            }
+            showModalUpdateAllowVisible(record.evaluateId);
+          }}
+        >
+          {record.allowVisible
+            ? "Không cho phép xuất hiện"
+            : "Cho phép xuất hiện"}
+        </ButtonGeneral>
+      ),
+    },
+    {
+      title: "Xóa",
+      key: "delete",
+      render: (value, record) => (
+        <ButtonGeneral
+          type="danger"
+          onClick={() => showModalDelete(record.evaluateId)}
+        >
+          Xóa
+        </ButtonGeneral>
+      ),
+    },
+  ];
 
   return (
     <WrapperEvaluateDetail>
-      <div className="item-evaluate">
-        <div className="evaluate-list">DANH SÁCH ĐÁNH GIÁ CỦA SẢN PHẨM </div>
-        <div className="group-select">
-          <Select
+      <ContainerEvaluate>
+        <TitlePage>CHI TIẾT CÁC ĐÁNH GIÁ CỦA SẢN PHẨM </TitlePage>
+        <FilterSelect>
+          <SelectGeneral
             className="select"
             size="large"
-            placeholder="Sắp xếp thời gian theo số sao"
+            placeholder={PLACEHOLDER.ARRANGE_TIME_BY_NUMBER_OF_STARS}
             options={selectSortNumberStar}
             onChange={(value) => setSortDate(value)}
-          ></Select>
-          <Select
+          />
+          <SelectGeneral
             className="select"
             size="large"
-            placeholder="Sắp xếp đánh giá theo thời gian đánh giá"
+            placeholder={PLACEHOLDER.SORT_REVIEWS_BY_REVIEW_TIME}
             options={selectSortTimeEvaluate}
             onChange={(value) => setSortStar(value)}
-          ></Select>
-        </div>
-      </div>
-
-      <ItemDetailEvaluate>
-        <div className="title-evaluate">
-          {/* <Input size="small" type="checkbox"></Input> */}
-          <div>Tên người dùng</div>
-          <div>Đánh giá</div>
-          <div>Số sao</div>
-          <div>Thời gian đánh giá</div>
-          <div>Sự xuất hiện</div>
-          <div>Cập nhật sự xuất hiện</div>
-          <div>Xóa</div>
-        </div>
-        {listEvaluate?.map((item: any) => {
-          const isoString = item?.time?.createdAt; // láy chuỗi time ios
-          const formattedDate = moment(isoString).format("HH:mm DD/MM/YYYY"); // dùng monment biến đổi ra chuỗi ngày tháng mong muốn
-          return (
-            <div className="detail-evaluate">
-              {/* <Input
-                onClick={() => handleClickItemCheckbox(item?.evaluateId)}
-                size="small"
-                type="checkbox"
-                // checked={listOrderId?.includes(item?.evaluateId)} // kiểm tra sự tồn tại item.id nếu có thì trả về true, tức là checked là true và dc chọn.
-              ></Input> */}
-              <div>{item?.user}</div>
-              <div>{item?.comment}</div>
-              <div>{item?.star}</div>
-              <div>{formattedDate}</div>
-              <div>{item?.allowVisible ? "Có cho phép" : "Không cho phép"}</div>
-              <div
-                className="allow-visible"
-                onClick={() => showModalUdateAllowVisible(item?.allowVisible)}
-              >
-                {item?.allowVisible
-                  ? "Không cho phép xuất hiện"
-                  : "Cho phép xuất hiện"}
-              </div>
-              <img
-                className="iconDelete"
-                onClick={showModalDelete}
-                src={iconDelete}
-                alt=""
-              />
-            </div>
-          );
-        })}
-      </ItemDetailEvaluate>
+          />
+        </FilterSelect>
+        <StyledTableGeneral
+          loading={isLoading}
+          dataSource={listEvaluate}
+          columns={columns}
+          pagination={false}
+        />
+      </ContainerEvaluate>
 
       <ItemPagination>
         <Pagination
           current={page}
           pageSize={limit}
-          total={totalEvaluates}
+          total={listEvaluate?.length}
           onChange={handleChangePage}
         />
-        <div className="display-total-evaluate">
-          Hiển thị từ sản phẩm thứ {(page - 1) * limit + 1} đến{" "}
-          {page * limit > totalEvaluates ? totalEvaluates : page * limit} trên
-          tổng {totalEvaluates} đánh giá{" "}
-          <Select
+        <TotalEvaluate>
+          <div>
+            Hiển thị từ sản phẩm thứ {startIndex} đến {endIndex} trên tổng
+            {listEvaluate?.length} đánh giá
+          </div>
+          <SelectGeneral
             defaultValue={limit}
-            options={selectLimits}
+            options={optionsLimit}
             onChange={handChangeSelectLimit}
-          />{" "}
+          />
           trên 1 trang.
-        </div>
+        </TotalEvaluate>
       </ItemPagination>
 
-      <ModalAllowVisible
+      <StyledModalAllowVisible
         onOk={handleUpdateAllowVisible}
-        open={isAllowVisivle}
-        onCancel={handleCanceAllowVisible}
-        centered
-      >
-        <div>Bạn có chắc chắn muốn cho phép xuất hiện không ?</div>
-      </ModalAllowVisible>
-      <ModalDelete
+        open={showModalAllowVisible}
+        onCancel={handleCancelAllowVisible}
+        title={STRING.CONFIRM_AllOW_VISIBLE}
+      />
+
+      <StyledModalDelete
         onOk={handleDeleteEvaluate}
-        open={isOpenModal}
+        open={isOpenModalDelete}
         onCancel={handleCancelModalDelete}
-        centered={true}
-        width={350}
+        width={500}
       >
-        <div className="message-delete">
-          <img src={imgDelete} alt="" />
-          <div>Bạn có chắc chắn muốn xóa đánh giá này không ?</div>
-        </div>
-      </ModalDelete>
+        <ConfirmationDialog message={STRING.CONFIRM_DELETE_EVALUATE} />
+      </StyledModalDelete>
     </WrapperEvaluateDetail>
   );
 }

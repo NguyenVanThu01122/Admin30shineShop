@@ -41,7 +41,7 @@ export default function ModalDeleteProduct({
     <CommonModal
       width={430}
       title={STRING.CONFIRM_DELETE_PRODUCT}
-      open={isModalDelete} // cái này đổi tên lại thành showModalDelete thì hợp lý hơn, đặt tên isDelete không có ý nghĩa lắm
+      open={isModalDelete}
       onCancel={cancelModalDeleteProduct}
       onOk={handleDeleteProduct}
     />

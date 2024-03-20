@@ -48,3 +48,15 @@ export const selectStatus = [
   { value: "delivered", label: "Đã giao hàng" },
   { value: "canceled", label: "Đã hủy" },
 ];
+
+export const selectSortNumberStar = [
+  { value: 0, label: "Mặc định" },
+  { value: -1, label: "Giảm dần" },
+  { value: 1, label: "Tăng dần" },
+];
+
+export const selectSortTimeEvaluate = [
+  { value: 0, label: "Mặc định" },
+  { value: -1, label: "Ngày giảm dần" },
+  { value: 1, label: "Ngày tăng dần" },
+];
