@@ -1,22 +1,27 @@
 import { createContext, useState } from "react";
+import { TypeColumns } from "../pages/OrderManagement/ListOrder/types";
+import { TypeBrands } from "../service/brand";
+import { getListOrderType } from "../service/order";
+import { TypeProducts } from "../service/product";
+import { TypeUsers } from "../service/user";
 // Initiate Context
 type AppContextType = {
-  saveUser: any;
-  setSaveUser: any;
-  saveProducts: any;
-  setSaveProducts: any;
-  saveBrands: any;
-  setSaveBrands: any;
-  saveListOrder: any;
-  setListOrder: any;
-  saveListEvaluate:any
-  setListEvaluate:any
+  saveUser: TypeUsers[];
+  setSaveUser: React.Dispatch<React.SetStateAction<any>>;
+  saveProducts: TypeProducts[];
+  setSaveProducts: React.Dispatch<React.SetStateAction<any>>;
+  saveBrands: TypeBrands[];
+  setSaveBrands: React.Dispatch<React.SetStateAction<any>>;
+  saveListOrder: getListOrderType[];
+  setListOrder: React.Dispatch<React.SetStateAction<any>>;
+  saveListEvaluate: TypeColumns[];
+  setListEvaluate: React.Dispatch<React.SetStateAction<any>>;
 };
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Provide Context
-const AppProvider = ({ children }: any) => {
+const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [saveUser, setSaveUser] = useState([]);
   const [saveProducts, setSaveProducts] = useState([]);
   const [saveBrands, setSaveBrands] = useState([]);

@@ -1,4 +1,3 @@
-import { Pagination } from "antd";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import SideBarProducts from "../../components/SideBarProducts";
@@ -17,12 +16,7 @@ function LayoutDefault() {
   return (
     <WrapperLayout>
       <SideBarProducts setIsModalLogOut={setIsModalLogOut} />
-      {/* <div> */}
-        <Outlet />
-        {/* <Pagination></Pagination> */}
-      {/* </div> */}
-
-      {/* modal ConfirmDialog logout */}
+      <Outlet />
       <CommonModal
         onOk={logout}
         width={420}

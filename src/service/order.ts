@@ -10,7 +10,7 @@ export enum OrderStatus {
   DELIVERED = "delivered",
   CANCELED = "canceled",
 }
-interface getListOrderType {
+export interface getListOrderType {
   keyword: string;
   sortMoney: number;
   methodPayment: PaymentMethod;
